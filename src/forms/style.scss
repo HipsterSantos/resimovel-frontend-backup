@@ -1,0 +1,89 @@
+.highlight-yellow{
+    color: #D9F172;
+}
+.underline{
+    text-decoration: underline;
+}
+.highlight-black{
+    color: #363535;
+    font-family: gotham-medium;
+}
+
+.other-option{
+    :nth-child(1){
+        margin-right: 2em;
+    }
+    :nth-child(3){
+        margin-left: 2em;
+    }
+} 
+
+
+// all styles to apply to createimove.jsx
+.create-imovel-component{
+    .left-side{
+
+        .list-of-steps-body{
+            margin-top: 2em;
+        }
+        .left-side-item-logo{
+            margin-bottom: .4em;
+        }
+        .left-side-item-text{
+            margin-top: auto;
+            margin-left: .7em;
+            margin-bottom: auto;
+            font-family: gotham-medium;
+    
+        }
+        .left-side-item-description{
+            margin-top: 1em;
+            text-align: left;
+            margin-bottom: 2em;
+            margin-left: 1em;
+            font-size: .7rem;
+            color:#363535;
+            font-family: gotham-light;
+        }
+
+        .icon-and-title{
+            display: flex;
+            cursor: pointer !important;
+        }
+        padding:0em 1em;
+        ul{
+            margin-top: 5em;
+            padding: 1em 1em;
+        }
+    }
+
+   
+
+
+    //Center-side
+    .center-side{
+
+        .action-buttons{
+            padding-left: 2em;
+            padding-right: 2em;
+            display: flex;
+            margin-bottom: 2em;
+            
+            .forward-btn{
+                width: 50%;
+                margin-left: auto;
+                margin-auto: auto;
+            }
+            .backward-btn{
+                width: 50%;
+                margin-left: auto;
+            }
+        }
+    }
+
+
+    //Right -side component 
+    .right-sidee{
+
+    }
+}

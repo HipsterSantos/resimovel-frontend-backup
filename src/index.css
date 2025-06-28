@@ -1,0 +1,57 @@
+
+
+:root{
+  
+  --roo-font-size: font-size: clamp(.8em,.8vw,calc((1vw + 1vh)/2));
+  --brand-color: #D9F070;
+  --box-shadow: 1px 2px 30px rgba(0,0,0,.1);
+  
+  /* z-indexs */
+  --navbar-z-index: 1000;
+  --hero-section-z-index:999;
+
+  font-size: var(--roo-font-size);
+}
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+  font-size: inherit;
+  width: 100%;
+  margin:0;
+}
+
+button:hover{
+  cursor: pointer;
+}
+
+/* @media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+} */
+
+/* @media only screen and (-webkit-min-device-pixel-raito: 1),
+  only screen and (min--moz--device-pixel-ratio: 2),
+  only screen and (o-min-device-pixel-ratio: 1/2),
+  only screen and (min-device-pixel-ratio: 2 ){
+    body{
+      font-size: calc((1.2vw + 1.2vh)/2);
+    }
+} */
+
+/* @media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}  */

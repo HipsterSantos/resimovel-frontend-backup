@@ -1,0 +1,108 @@
+
+.content-side-box{
+    line-height: 1px;
+    color: #fff;
+    margin-top: auto;
+    margin-bottom: 1em;
+    h3:first-of-type{
+        width: 70%;
+        font-family: gotham-bold;
+        font-size: 2.2rem !important;
+    }
+    h5:first-of-type{
+        font-family: gotham-medium;
+        width: 43%;
+        font-size: .8rem !important;
+        margin-top: 1.5em;
+    }
+    p:first-of-type{
+        font-size: .8em;
+        font-family: gotham-light;
+    }
+}
+
+.ads-content-box{
+        display: flex;
+        position: relative;
+        margin-left: auto;
+        padding-bottom: 0;
+        margin-right: 6vw;
+
+        flex-direction: column;
+        justify-content: end;
+        top: 2em;
+
+        // align-items: start;
+        display: flex;
+        z-index: 900;
+        .card-ads{
+            display: flex;
+            svg{
+                height: inherit !important;
+            }
+        }
+}
+
+@media only screen and (min-width: 768px) and (min-width: 1023){
+
+    .ads-content-box{
+        display: flex;
+        margin-left: auto;
+        z-index: 6;
+        padding-bottom: 0;
+        margin-right: 10vw;
+        margin-left: auto;
+        align-items: start;
+        display: flex;
+        z-index: 1001;
+        .card-ads{
+            display: flex;
+            // z-index: inherit;
+            margin-bottom: auto ;
+            height: auto;
+        }
+        h3{
+            width: 22rem;
+            margin-bottom: 1em;
+            font-family: 'gotham-bold';
+        }
+        h6{
+            font-family: gotham-light;
+            margin-top: 1em;
+            font-size: 1rem;
+        }
+        svg{
+            margin-top: auto;
+            top: -6vh;
+            left: 1em;
+            position: relative;
+            margin-right: 0;
+            margin-left: auto;
+            margin-bottom: auto;
+            scale:1.3;
+        }
+    }
+
+    .ads-content-box{
+
+}}
+
+
+@media only screen and (min-width: 768px ){
+    .ads-content-box{
+        .card-ads{
+            // display:  none; /
+        }
+    
+        .ads-content-box{
+
+    }
+    }
+}
+@media screen and  (min-width: 769px ) and (max-width: 1224px) {
+    .ads-content-box{
+        .card-ads{
+
+        }
+    }
+}

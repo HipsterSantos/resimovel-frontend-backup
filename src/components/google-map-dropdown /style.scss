@@ -1,0 +1,19 @@
+.houseOption{
+    &:hover{
+        background: #edff9eca
+    }
+    font-size: .9rem;
+    border-bottom: 1.2px solid rgba(0, 0, 0, 0.10002);
+    margin-top: .1em;
+    margin-bottom: .1em;
+    font-size: 1rem;
+    border-bottom: 1.4px solid rgba(0,0,0,.10003);
+    padding: .4em 2em;
+}
+.dropdown-paper-body{
+    top: 2.7em;
+    left: 0;
+    right: 0;
+    bottom: -13em;
+    position: absolute !important;
+}

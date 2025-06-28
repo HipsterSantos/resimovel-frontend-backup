@@ -1,0 +1,191 @@
+
+.google-map-dropdown{
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+}
+
+.center-load-info{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.btn-filter{
+    white-space: nowrap;
+}
+
+
+.apply-filter-container{
+    cursor: pointer;
+    padding: .7em;
+    display: flex;
+    font-size: .8rem !important;
+    .apply-filter-btn{
+        background: #000;
+        display: flex;
+        color: #fff;
+        padding: .7em 1em;
+        white-space: nowrap;
+        width: fit-content;
+        border-radius: 0.7em;
+        justify-content: space-between;
+        
+        .apply-filter-text{
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-left: 1em;
+            font-size: .8rem;
+            font-weight: 100 !important;
+            font-family: 'gotham-light';
+        }
+    }
+
+    .filters-applied{
+        display: flex;
+        margin-left: 3em;
+        .outlined-button{
+            display: flex;
+            /* width: fit-content; */
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-left: 1em;
+            /* background: #000; */
+            padding: 0.7em 1em;
+            border: 1px solid #000;
+            border-radius: 1em;
+            justify-content: space-between;
+            .text{
+                margin-top: auto;
+                margin-bottom: auto;
+                display: flex;
+                justify-content: space-between;
+                width: 100%;
+                margin-right: 1em;
+                .text-1,.text-3{
+                    margin-left: .7em;
+                    margin-right: .5em;
+                }
+            }
+        }
+    }
+
+    .clean-filter{
+        margin-left: auto;
+        margin-top: auto;
+        margin-bottom: auto;
+        display: flex;
+        padding-right: 1em;
+        font-family: 'gotham-medium';
+        &>*{
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+    }
+}
+
+.headline-found-research{
+    padding: 1em;
+    display: flex;
+    .headlines{
+        margin-top: auto;
+        margin-bottom: auto;
+        margin-right: auto;
+        .title-type-of-house-1{
+            margin: 0;
+            font-family: 'gotham-medium';
+            font-size: 1.2rem !important;
+            line-height: 1.5;
+        }
+        .title-type-of-house-2{
+            font-weight: 100;
+            font-family: 'gotham-light';
+            font-size: 1rem;
+        }
+    }
+    .draw-on-map{
+        margin-left: auto;
+        margin-top: auto;
+        margin-bottom: auto;
+
+        background: #000;
+        display: flex;
+        color: #fff;
+        padding: .7em 1em;
+        white-space: nowrap;
+        width: fit-content;
+        border-radius: 0.7em;
+        justify-content: space-between;
+        .draw-on-map-text{
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-left: 1em;
+            font-size: .8rem;
+            font-weight: 100 !important;
+            font-family: 'gotham-light';
+        }
+    }
+}
+
+.card-container{
+    .card-media-img{
+
+    }
+    .card-body-container{
+        .card-title{
+            font-family: 'gotham-medium';
+            font-size: 1.3rem;
+            padding-top: .7em;
+        }
+        .card-description{
+            font-size: .74rem;
+            margin: .8em 0;
+            margin-top: 0;
+        }
+        .card-house-traits{
+            display: flex;
+            width: fit-content;
+            justify-content: space-between;
+            font-size: .7rem;
+            width: 100%;
+            color: #54601D;
+            font-weight: bold;
+        }
+        .card-house-location{
+            font-family: 'gotham-light';
+            font-weight: 300;
+            margin-top: 1em;
+            font-size: .9rem;
+        }
+
+        .card-overlap-text-bg{
+
+        }
+        .card-overlap-type-business{
+
+        }
+        .card-overlap-type-right-left{
+            
+        }
+        .card-overlap-type-right-arrow{
+
+        }
+
+        .card-footer{
+            display:flex;
+            .partner-img{
+                margin-top: auto;
+                margin-bottom: auto;
+                width: 23% !important;
+                height: 50% !important;
+            }
+            .card-price{
+                margin-top: auto;
+                margin-bottom: auto;
+                font-family: 'gotham-bold';
+                font-size: 1.2rem;
+            }
+            
+        }
+    }
+}

@@ -1,0 +1,142 @@
+// *{
+//     font-family: gotham-medium;
+// }
+.recent-house-container{
+    display:flex;
+    flex-direction: row;
+    z-index: 5;
+    h4{
+        font-family: gotham-bold;
+        width: 40rem;
+        font-size: 2.5rem;
+        color: #414141;
+    }
+
+    // todo refactor this into another button
+    .buy-rent-button{
+        margin-left: auto;
+        margin-right: 4.5vw;
+        margin-top: 2em;
+        margin-bottom: auto;
+        button{
+            padding: 1.2em;
+            border: none;
+            border-radius: none;
+            border-right: 1px solid #b7b7b7;
+        }
+        .buy{
+            border-radius: 0;
+        }
+        button:first-of-type{
+            border-radius: .3em 0 0 .3em ;
+        }
+        
+        button:last-of-type{
+            border:none;
+            border-radius: 0 .3em .3em 0 ;
+        }
+        button.selected{
+            background: #D9F070;
+        }
+    }
+    // finish here
+
+    :nth-child(2){
+        margin-left: auto;
+        border:1px solid #ddd;
+        border-radius: .5em;
+    }
+    
+}
+
+.cards-container{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20vw, 1fr));
+    grid-auto-rows: auto;
+    grid-gap:1.8em;
+    grid-row-gap: 3em;
+    width: inherit;
+    margin: 3em 0;
+    
+    .mian-card-container{
+        border-radius: 0.5em;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.0999);
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        .card-media-img{
+            width: 100%;
+            height: 30vh;
+            object-fit: cover;
+            display: flex;
+            flex-direction: column;
+            // :nth-child(1){
+            //     margin-top:1em;
+            // }
+            // :nth-child(2){
+            //     margin-top: auto;
+            //     justify-self: center;
+            //     background: #fff;
+            //     width: auto;
+            // }
+        }
+        .card-overlap-text-bg{
+            
+        }
+
+        .card-overlap-type-business{
+
+        }
+        .card-overlap-type-left-arrow{
+
+        }
+        .card-overlap-type-right-arrow{
+
+        }
+        .card-body-content{
+
+            display: flex;
+            flex-direction: column !important;
+            .card-body-content-container{
+                padding: 1em;
+                
+                &.house-name{
+                    display: flex;
+                }
+    
+                &>*:nth-child(2){
+                    display: flex;
+                }
+            }
+        }
+        .card-footer{
+            display: flex;
+            padding: 1em;
+            &>*{
+                margin: auto;
+            }
+        }
+    }
+}
+
+.scroll-to-see-more{
+    text-align: center;
+}
+
+
+.house-name,
+.house-traits-location,
+house-traits-location,house-traits-sizing{
+    width: 100%;
+    margin-top: .8em;
+    &>*{
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+    &>*:nth-child(1){
+        margin-right: auto;
+    }
+    &>*:nth-child(2){
+        margin-left:auto;
+    }
+}

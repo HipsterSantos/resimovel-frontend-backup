@@ -1,0 +1,76 @@
+.be-realestate-container{
+    background: #F7F8FA;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    
+    .logo-section{
+        display: flex;
+        margin: 2em 0;
+        :first-child,:last-child{
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        :last-child{
+            margin-left: .8em;
+        }
+    }
+    .container-rows{
+        padding: 0 2em;
+        display: flex;
+        justify-content: space-around;
+        .left{
+            z-index: 4;
+            line-height: 3;
+            .be-realstate{
+                margin-top: 1em;
+                button{
+                    padding: 1.6em 2em;
+                    border-radius: .6em;
+                    border: 1px solid gray;
+                    background: #fff;
+                    &.active{
+                        background: #D9F172;
+                        border:none;
+                    }
+                }
+                :first-child{
+                    margin-right: 1em;
+                }
+
+                button:active::after {
+                    content: '';
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    top: 0;
+                    left: 0;
+                    background-color: rgba(0, 0, 0, 0.2);
+                  }
+            }
+
+        }
+        .center{
+            z-index: 3;
+            margin-top: auto;
+        }
+        .right{
+            z-index: 5;
+            .step-one{
+                padding: 2em;
+                background: #fff;
+                border-radius: .5em;
+                margin-left: -2em;
+                margin-bottom:1em;
+            }
+        }
+    }
+}
+
+.light{
+    font-family: gotham-light !important;
+    font-size: 1rem;
+}
+.medium-text{
+    font-family: gotham-medium !important;
+}

@@ -1,0 +1,117 @@
+.steps-to-join{
+    --step-to-show-grid-zindex: 300;
+    --step-to-show-overlay-zindex: 280;
+    display: flex;
+    flex-direction: column;
+    font-family: gotham-medium imor !important;
+    padding: 2em; 
+    h3{
+        width: 65vw;
+    }  
+    .grid-container{
+        display: flex;
+        .step-to-show-grid::before{
+            z-index: var(--step-to-show-overlay-zindex);
+            display: block;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(161deg, rgba(255, 255, 255, .3) 23%, rgba(255, 255, 25, .6) 122%);
+            // transition: all .3s ease-in-out;
+        }
+        .step-to-show-grid:hover::before{
+            background: linear-gradient(83deg,rgba(0,0,0,.2) 34%,rgba(0,0,0,.2) 64%);
+        }
+        .step-to-show-grid{
+            transition: all 3s ease-in-out;
+            z-index: var(--step-to-show-grid-zindex);
+            position: relative;
+            width: 150%;
+            border-radius: 4em;
+            padding: 2em;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            margin-right: 3em;
+            background: url(/img/all-people.JPEG) no-repeat;
+            background-size: cover;
+            &>*{
+                z-index: inherit;
+            }
+            .second-order{
+                // margin-top: auto;
+                margin: auto;
+                // margin-left: auto;
+                // margin-right: auto; 
+            }
+            .showing-zone{
+                padding:2em;
+                z-index: 5;
+                h4{
+                    margin-bottom: 1em;
+                    font-family: gotham-medium !important;
+                    color:#fff;
+                }
+                svg{
+                    padding:2em;
+                }
+            }
+            .image{
+                z-index: 4;
+                margin-top: auto;
+            }
+            // .intro-title{
+            //     z-index: 3;
+            //     background: #D9F172;
+            //     padding: 2em;
+            //     /* width: 107%; */
+            //     margin-left: -9em;
+            //     margin-left: -23vw;
+            //     margin-top: auto;
+            //     height: 65vh;
+            //     h4{
+            //         font-family: gotham-medium;
+            //     }
+            //     p{
+            //     font-family: gotham-light ;
+            //     font-size: .8rem;
+            //     }
+            // }
+        }
+     
+        .steps-to-join{
+            margin-left: auto;
+            width: 100%;
+            .how-to-cards{
+                margin-bottom: 1.5em;
+                h5{
+                    font-family: gotham-medium;
+                }
+                p{
+                    font-family: gotham-light;
+                }
+                padding: 1.3em;
+                border-radius: 0.5em;
+                
+            }
+        }
+    }
+}
+
+.how-to-cards{
+        background: #F7F8FA;
+        border-radius: .5em;
+        padding: 1em;
+        &:hover{
+            background:#D9F172;
+            color:#fff;
+        }
+        &.active{
+            background:#D9F172;
+            color:#000;
+        }
+}

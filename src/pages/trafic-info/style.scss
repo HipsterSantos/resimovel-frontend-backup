@@ -1,0 +1,63 @@
+.trafic-information-container{
+    display: flex;
+    font-family: gotham-medium !important;
+    margin-bottom: 1em;
+    background-color: #F7F7F7;
+    padding: 3em 1em;
+    justify-content: space-around;
+    h4{
+        font-family: gotham-medium;
+        font-weight: 500;
+}
+    &>*{
+        margin: auto;
+        width: 100%;
+        margin-left: .8em;
+    }
+    
+    .rowOne{
+
+    }
+    .rowTwo{
+
+    }
+    .rowThree{
+
+    }
+    .rowFour{
+        display: flex;
+        flex-direction: column;
+        h4{
+            font-size: 1rem;
+            font-family: gotham-medium;
+            font-weight: 500;
+        }
+        div.rowFour-states{
+            display: flex;
+            width: inherit;
+            justify-content: space-around;
+            margin-top: .5em;
+            margin-bottom: auto;
+            ul{
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                line-height: auto;
+                list-style: none;
+                li{
+                    font-weight: 100;
+                    font-family: gotham-light;
+                    line-height: 1.5;
+                }
+            }
+        }
+    }
+}
+
+.row-card{
+    background: #D9F070;
+    border-radius: .5em;
+    padding:1em;
+    min-width: 20vw;
+    min-height: 20vh;
+}

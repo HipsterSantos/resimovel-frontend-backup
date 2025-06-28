@@ -1,0 +1,23 @@
+.modal-container{
+    font-family: gotham-light !important;
+}
+
+.logo-and-content{
+    flex: 3;
+    padding: 2em;
+    .content{
+        h4{
+        margin-top: 1em;
+        font-family: gotham-bold;
+        font-size: 2rem;
+
+        }
+         h5{
+            font-family: gotham-light;
+            font-size: 1rem;
+         }
+    }
+}
+.card-content-section{
+    flex: 3;
+}

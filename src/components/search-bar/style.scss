@@ -1,0 +1,113 @@
+
+.searchbar-container{
+    font-family: gotham-light;
+    background: #fff;
+    margin-bottom: auto;
+    border-radius: 9px;
+    color: #666666;
+    padding: 1em 1.8em;
+    .buttons-here{
+        display:flex;
+        background-color: gray;
+        border-radius: .5em;
+        background: #F7F7F7;
+        margin-right: .8em;
+        .buy-btn,.rent-btn{
+            border-radius: inherit;
+            border:none;
+            padding-right: .8em;
+            background: #F7F7F7;
+            text-align: center;
+            justify-self: baseline;
+            padding: 1em;
+            padding-top:1em;
+        }
+        .buy-btn.selected{
+
+                background: #daf170 !important;
+        }
+        .rent-btn.selected{
+                background: #daf170 !important;
+        }
+        //style for border-radius on right cornes
+        .buy-btn.selected.change-border-radius-right{
+            border-radius: 10px 0px 0px 10px!important;
+        }
+        //style for border-radius on left corners
+        .rent-btn.selected.change-border-radius-left{
+            border-radius: 0 10px 10px 0 !important;
+        }
+    }
+    .open-map-btn{
+        text-transform: math-auto;
+        background: #daf170;
+        margin-top: auto;
+        color: #000;
+        width: 100%;
+        height: 42px;
+    }
+
+    p:first-of-type{
+        padding: 0.2em 0;
+        font-size: .8rem;
+        /* margin-top: 1em; */
+        color: #171414;
+    }
+    .custom-search-box{
+        display:flex;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        border: 1.5px solid #ddd;
+        padding: 0 1em;
+        border-radius: 0.5em;
+        fieldset{
+            border:none;
+        }
+        :nth-child(1){
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-right: 1em;
+        }
+        :nth-child(2){
+            width: 100%;
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        :nth-child(3){
+            margin-left: 1.5em;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+    }
+    :nth-child(2){
+        div.button-search-box{
+            .btn-clicked{
+                background: red;
+            }
+            button.clicked{
+    
+            }
+            button{
+    
+            }
+        }
+        div.custom-search-box{
+
+        }
+    }
+}
+
+.click-to-open-map{
+    margin-top: 1.7em;
+    margin-bottom: auto;
+    width: 20% !important;
+    & button{
+        text-transform: math-auto;
+        font-size: 9pt;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+}

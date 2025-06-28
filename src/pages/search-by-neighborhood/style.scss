@@ -1,0 +1,80 @@
+.search-by-region-container{
+    font-family: gotham-medium !important;
+    padding: 1em 2em;
+    display: flex;
+    flex-direction: column;
+    .search-by-region{
+        display: flex;
+        flex-direction: inherit;
+        h4{
+            font-family: gotham-medium !important;
+        }
+        .tiny-tittle{
+            color: #0880FD;
+            font-size: 10pt;
+        }
+        
+    }
+    .search-by-region{
+        margin: 2em 0;
+        h5{
+            font-family: gotham-medium !important;
+            color: #0880FD;
+        }
+       
+    }
+    .search-by-neighborhood{
+
+            .rowOne{
+        
+            }
+            .rowTwo{
+                .content{
+                    display: flex;
+                    margin-top: 2em;
+                    h6{
+                        font-family: gotham-medium !important;
+                        font-size: 14pt;
+                    }
+                    :first-child{
+                        color: #0880FD;
+                    }
+                    :last-child{
+                        margin-left: 1em;
+                    }
+                }
+            }
+    }
+
+    .neighborhood-list{
+        height: 200px;
+        margin: 3em 0;
+    }
+
+}
+
+
+.button-filter{
+    flex-wrap: wrap;
+    width: 90vw;
+    display: flex;
+    margin-top: 1em;
+    .btn-filter{
+        padding: 1.5em 2em;
+        color: #000;
+        background-color: #F0F1F1;
+        border: none;
+        border-radius: 3em;
+        margin-right: 1em;
+        margin-top: 1em;
+        &.selected{
+            background-color: #000;
+            color: #fff;
+        }
+        &:hover{
+            transition: all ease-out .4s;
+            background-color: #000;
+            color: #fff;
+        }
+        }
+}
