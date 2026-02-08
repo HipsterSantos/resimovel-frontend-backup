@@ -1,0 +1,62 @@
+.card-container{
+    .card-media-img{
+
+    }
+    .card-body-container{
+        .card-title{
+            font-family: 'gotham-medium';
+            font-size: 1rem;
+            padding-top: .7em;
+        }
+        .card-description{
+            font-size: .74rem;
+            margin: .8em 0;
+            margin-top: 0;
+        }
+        .card-house-traits{
+            display: flex;
+            width: fit-content;
+            justify-content: space-between;
+            font-size: .7rem;
+            width: 100%;
+            color: #54601D;
+            font-weight: bold;
+        }
+        .card-house-location{
+            font-family: 'gotham-light';
+            font-weight: 300;
+            margin-top: 1em;
+            font-size: .9rem;
+        }
+
+        .card-overlap-text-bg{
+
+        }
+        .card-overlap-type-business{
+
+        }
+        .card-overlap-type-right-left{
+            
+        }
+        .card-overlap-type-right-arrow{
+
+        }
+
+        .card-footer{
+            display:flex;
+            .partner-img{
+                margin-top: auto;
+                margin-bottom: auto;
+                width: 23% !important;
+                height: 50% !important;
+            }
+            .card-price{
+                margin-top: auto;
+                margin-bottom: auto;
+                font-family: 'gotham-bold';
+                font-size: 1.5rem;
+            }
+            
+        }
+    }
+}
