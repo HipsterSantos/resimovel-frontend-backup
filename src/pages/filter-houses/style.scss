@@ -134,7 +134,7 @@
     .card-body-container{
         .card-title{
             font-family: 'gotham-medium';
-            font-size: 1.3rem;
+            font-size: 1rem;
             padding-top: .7em;
         }
         .card-description{
@@ -183,9 +183,14 @@
                 margin-top: auto;
                 margin-bottom: auto;
                 font-family: 'gotham-bold';
-                font-size: 1.2rem;
+                font-size: 1.5rem;
             }
             
         }
     }
+}
+
+
+.footer-main-container{
+    margin-top: 0 !important;
 }

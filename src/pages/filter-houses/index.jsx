@@ -150,8 +150,8 @@ const CardBody = styled.div`
     position: relative;
     padding: .5em 1em;
     background: #F7F7F7;
-    margin-top: 1em;
-    line-height: 1;
+    margin-top: .5em;
+    line-height: 1.5;
 `;
 
 
@@ -169,7 +169,7 @@ const CardOverlapText = styled.div`
     --card-overlap-type-business: 10;
     --card-overlap-type-left-arrow:9;
     --card-overlap-type-right-arrow: var(--card-overlap-type-left-arrow);
-    card-overlap-text-bg:8;
+    --card-overlap-text-bg:8;
 
     &.card-overlap-text-bg{
         border-radius: .5em .5em 0 0;
@@ -178,19 +178,33 @@ const CardOverlapText = styled.div`
         background: #fff;
         padding: 0.2em 1.8em;
         position: absolute;
-        top: -3.5vh;
-        left: 4vw;
+        top: 23.5vh;
+        left: 5.5vw;
 
     }
     &.card-overlap-type-business{
         position: absolute;
-        top: -31vh;
-        font-weight: bold;
-        color: #fff;
-        background: rgba(169, 54, 55,.7);
+        top: 2.5vh;
+        left: 1.5vw;
+        font-size: .89rem;
+        text-align: center;
+        font-weight: 800;
+        color: #000;
+        background: rgb(240,240,242);
         padding: .5em .7em;
-        border-radius: .6em;
-        z-index: var(--card-overlap-type-business)
+        border-radius: .8em;
+        z-index: var(--card-overlap-type-business);
+
+        &.reduced-the-price{
+            background: #d9f070;
+            left: 7vw;
+        }
+        &.to-release{
+            background: #000;
+            color: #fff;
+            // right: 2vw;
+            left: 7vw;
+        }
         
     }
     &.card-overlap-type-left-arrow,&.card-overlap-type-right-arrow{
@@ -207,11 +221,12 @@ const CardOverlapText = styled.div`
         position: absolute;
         font-size: 20pt;
         color: #fff;
-        top: -34vh;
+        top: 0;
+        border-radius: .5em 0em 0em .5em;
         background: transparent;
         width: 20%;
-        transition: all .4s ease-in;
-        height: 34vh;
+        transition: all .2s ease-in;
+        height: 100%;
         text-align: center;
         left: 0;
         right: 0;
@@ -229,16 +244,18 @@ const CardOverlapText = styled.div`
         opacity: 0;
         bottom: 0;
         position: absolute;
+        border-radius: 0 .5em .5em 0;
         font-size: 20pt;
         color: #fff;
-        top: -34vh;
+        top: 0;
         background: transparent;
         width: 20%;
         transition: all .4s ease-in;
-        height: 34vh;
+        height: 100%;
         text-align: center;
-        left: 35vh;
+        // left: 0;
         right: 0;
+
         &:hover{
             opacity: 1;
             background: linear-gradient(85deg, rgba(0, 0, 0, 0) 12%, rgba(0, 0, 0, 0.4) 84%);
@@ -373,57 +390,65 @@ export default function FilterHouses(props){
                     </HeadlineAndCounterFilter>
                 </RowOne>
                 <RowTwo>
-                <Box className="cards-container" sx={{
-                    flex: 6,
-                    height:'100vh',
-                    overflowY: 'scroll',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    padding: '1em .3em',
-                    width: '100%',
-                    gap: '1em'
-                }}>
-                    {[1,3,2,2,32].map(()=>(
-                        <CardContainer className="card-container main-card-container">
-                            <CardHeader>
-                                <CardMedia className='card-media-img' src={HouseCover}/>
-                                <CardOverlapText className='card-overlap-text-bg'>
-                                    Apartamento
-                                </CardOverlapText>
-                                
-                                <CardOverlapText className='card-overlap-type-business'>
-                                    Arrendar
-                                </CardOverlapText>
-                                
-                                <CardOverlapText className='card-overlap-type-left-arrow'>
-                                    {"<"}
-                                </CardOverlapText>
-                                
-                                <CardOverlapText className='card-overlap-type-right-arrow'>
-                                    {">"}
-                                </CardOverlapText>
-                            </CardHeader>
-                            <CardBody className='card-body-container'>
-                                <h3 className="card-title">Moradia Duplex em SP</h3>
-                                <p className="card-description">Aluguel de apartamento mobiliado, de 65 m² com 2 quartos, 2 banheiros e 1 vaga na garagem em Itaim Bibi.</p>
-                                <p className="card-house-traits">
-                                    <span>3 Quartos</span>
-                                    <span>3 Vagas</span>
-                                    <span>Estancionamento</span>
-                                </p>
-                                <h3 className="card-house-location">Rua Fiandeiras, Itaim Bibi · 
-                                São Paulo</h3>
-                                <CardFooter className='card-footer'>
-                                    <CardMedia className="partner-img" width={30} src={InzoLogo}/>
-                                    <h3 className="card-price">250,000Kz</h3>
-                                </CardFooter>
-                            </CardBody>
-                            
+                    <Box className="cards-container" sx={{
+                        flex: 6,
+                        height:'100vh',
+                        overflowY: 'scroll',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        padding: '1em .3em',
+                        width: '100%',
+                        gap: '1em'
+                    }}>
+                        {[1,3,2,2,32].map(()=>(
+                            <CardContainer className="card-container main-card-container">
+                                <CardHeader>
+                                    <CardMedia className='card-media-img' src={HouseCover}/>
+                                    <CardOverlapText className='card-overlap-text-bg'>
+                                        Apartamento
+                                    </CardOverlapText>
+                                    
+                                    <CardOverlapText className='card-overlap-type-business'>
+                                        Arrendar
+                                    </CardOverlapText>
+                                    
+                                    {/* <CardOverlapText className='card-overlap-type-business reduced-the-price'>
+                                        Reduziu o preço
+                                    </CardOverlapText> */}
 
-                        </CardContainer>
+                                    <CardOverlapText className='card-overlap-type-business to-release'>
+                                        A estrear
+                                    </CardOverlapText>
+                                    
+                                    <CardOverlapText className='card-overlap-type-left-arrow'>
+                                        {"<"}
+                                    </CardOverlapText>
+                                    
+                                    <CardOverlapText className='card-overlap-type-right-arrow'>
+                                        {">"}
+                                    </CardOverlapText>
+                                </CardHeader>
+                                <CardBody className='card-body-container'>
+                                    <h3 className="card-title">Moradia Duplex em SP</h3>
+                                    <p className="card-description">Aluguel de apartamento mobiliado, de 65 m² com 2 quartos, 2 banheiros e 1 vaga na garagem em Itaim Bibi.</p>
+                                    <p className="card-house-traits">
+                                        <span>3 Quartos</span>
+                                        <span>3 Vagas</span>
+                                        <span>Estancionamento</span>
+                                    </p>
+                                    <h3 className="card-house-location">Rua Fiandeiras, Itaim Bibi · 
+                                    São Paulo</h3>
+                                    <CardFooter className='card-footer'>
+                                        <CardMedia className="partner-img" width={30} src={InzoLogo}/>
+                                        <h3 className="card-price">250,000Kz</h3>
+                                    </CardFooter>
+                                </CardBody>
+                                
 
-                    ))}
-                </Box>
+                            </CardContainer>
+
+                        ))}
+                    </Box>
                     <MapContainer className='google-map-container'>
                     {isLoaded ? (
                     <GoogleMap

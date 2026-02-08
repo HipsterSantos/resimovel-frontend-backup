@@ -38,7 +38,7 @@ const NavContainer = styled.nav`
 
     //desktop screens
     @media only screen and (min-width:1024px ){
-        // z-index: 10000;
+        // z-ickndex: 10000;
         width: inherit;
     }
     // larger screens 
@@ -354,7 +354,7 @@ export default function MenuComponent(){
         </ContainerBoxs>
         
         <FullScreenDialog 
-        open={state.modal.login.open || state.modal.signup.open || state.modal.onBoarding.open}
+        open={state.modal.login.open || state.modal.signup.open || state.modal.onBoarding.open || state.modal.passwordRecover.open}
         description={(<>Escolha um de nossos <span className='highlight-yellow'>Planos profissional</span> </>)}
         miniDescription={`Descubra a excelência em serviços com nossa seleção de Planos Profissionais
         cuidadosamente elaborados para atender às suas necessidades.
