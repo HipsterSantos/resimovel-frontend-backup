@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   build:{
     chunkSizeWarningLimit: '5000',
-    outDir: 'build',
+    outDir: 'dist',
   },
   resolve:{
     alias:{
