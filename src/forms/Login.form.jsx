@@ -10,19 +10,39 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 
-// GraphQL Mutation for Login
 const LOGIN_MUTATION = gql`
   mutation login($email: String!, $password: String, $googleId: String) {
     login(email: $email, password: $password, googleId: $googleId) {
+      success
+      message
+      token
+      user {              # ← this block can now be safely requested
+        id
+        name
+        email
+        phone
+        verifiedEmail     # ← only returned when user exists
+      }
+      errors
+      # dev { tempEmail note }   # ← only in dev mode
+    }
+  }
+`;
+
+const VERIFY_OTP_MUTATION = gql`
+  mutation verifyOTP($email: String!, $otp: String!) {
+    verifyOTP(email: $email, otp: $otp) {
+      success
+      message
+      token
       user {
         id
         name
         email
+        phone
         verifiedEmail
       }
-      token
-      message
-      success
+      errors
     }
   }
 `;
@@ -36,21 +56,7 @@ const SEND_OTP_MUTATION = gql`
   }
 `;
 
-const VERIFY_OTP_MUTATION = gql`
-  mutation verifyOTP($email: String!, $otp: String!) {
-    verifyOTP(email: $email, otp: $otp) {
-      user {
-        id
-        name
-        email
-        verifiedEmail
-      }
-      token
-      message
-      success
-    }
-  }
-`;
+
 
 // Styled Components (unchanged)
 const Form = styled.form`
@@ -215,8 +221,9 @@ export default function LoginForm() {
         },
       });
       console.log('Login response:', data); // Debug log
-      // debugger
+      
       if (!data?.login?.success) {
+        debugger
         if (data?.login?.message?.includes('verify your email')) {
           setShowOTP(true);
           toast.info('Por favor, insira o OTP enviado para seu email/SMS');
@@ -225,18 +232,18 @@ export default function LoginForm() {
         // throw new Error(data?.login?.message || 'Erro desconhecido no login');
         // debugger
       }
-
-      if (data.login.token) {
-        localStorage.setItem('authToken', data.login.token);
+      debugger
+      if (data?.login?.token) {
+        localStorage.setItem('authToken', data?.login.token);
         dispatch({
           type: 'SET_SESSION',
-          payload: { isLoggedIn: true, user: data.login.user },
+          payload: { isLoggedIn: true, user: data?.login.user },
         });
         dispatch({
           type: 'TOGGLE_MODAL',
           payload: { modalName: 'login' },
         });
-        toast.success(data.login.message);
+        toast.success(data?.login.message);
         // debugger
         navigate('/'); // Uncomment to redirect after login
       }

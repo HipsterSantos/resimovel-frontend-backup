@@ -37,12 +37,7 @@ const MultipleField = styled.div`
 const SIGNUP_MUTATION = gql`
   mutation Signup($userInput: UserInput!) {
     signup(userInput: $userInput) {
-      user {
-        id
-        name
-        email
-        photo
-      }
+     
       token
       message
     }
@@ -54,6 +49,9 @@ const SIGNUP_MUTATION = gql`
 export default function SignupForm(props) {
   const { state,dispatch } = useStore();
   const [signupMutation] = useMutation(SIGNUP_MUTATION);
+  const [loading, setLoading] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState('');
+
   const [value,setValue] = React.useState({
   name: '',
   email: '',
@@ -64,15 +62,17 @@ export default function SignupForm(props) {
 })
 
 const handleSignup = ()=>{
+  setLoading(true);
+  setErrorMsg('');
     signupMutation({
       variables:{
             "userInput": {
-              "name": "someting useulf",
-              "email":"somng@gmail.com",
-              "password": "sober",
-              "phone":"893929332",
-              "street":"3892",
-              "neighborhood":"i92893923"
+              "name": value.name.trim() || "someting useulf",
+              "email": value.email.trim() || "somng@gmail.com",
+              "password": value.password.trim() || "sober",
+              "phone":value.phone.trim() || "893929332",
+              "street":value.street.trim() || "3892",
+              "neighborhood":value.fullAddress.trim() || "i92893923"
         }
       }
     }).then((result)=>{
@@ -80,8 +80,10 @@ const handleSignup = ()=>{
       debugger
     })
     .catch((error)=>{
-      console.error(error)
       debugger
+      const msg = error.graphQLErrors?.[0]?.message || "Erro ao criar conta";
+      setErrorMsg(msg);
+      console.error(error,msg);
     })  
 }
 
@@ -197,7 +199,13 @@ React.useEffect(()=>{
           <span className="highlight-yellow underline">Logar</span>
         </Typography>
         <SubmitButton className="submit-login-google">
-          <button type="button" onClick={handleSignup}>Cadastrar</button>
+          <button 
+              type="button" 
+              onClick={handleSignup}
+              disabled={loading}
+              >
+              {loading ? "Cadastrando..." : "Cadastrar"}
+          </button>
           <LogoAndText className="google-logo">
             <GoogeLogo />
             <span>Cadastrar com google</span>
