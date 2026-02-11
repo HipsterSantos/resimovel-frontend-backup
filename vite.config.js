@@ -6,7 +6,8 @@ dotenv.config()
 export default defineConfig({
   plugins: [react()],
   build:{
-    chunkSizeWarningLimit: '5000'
+    chunkSizeWarningLimit: '5000',
+    outDir: 'build',
   },
   resolve:{
     alias:{
