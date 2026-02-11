@@ -10,27 +10,29 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 
+// ────────────────────────────────────────────────
+// GraphQL Mutations
+// ────────────────────────────────────────────────
 const LOGIN_MUTATION = gql`
-  mutation login($email: String!, $password: String, $googleId: String) {
+  mutation Login($email: String!, $password: String, $googleId: String) {
     login(email: $email, password: $password, googleId: $googleId) {
       success
       message
       token
-      user {              # ← this block can now be safely requested
+      user {
         id
         name
         email
         phone
-        verifiedEmail     # ← only returned when user exists
+        verifiedEmail
       }
       errors
-      # dev { tempEmail note }   # ← only in dev mode
     }
   }
 `;
 
 const VERIFY_OTP_MUTATION = gql`
-  mutation verifyOTP($email: String!, $otp: String!) {
+  mutation VerifyOTP($email: String!, $otp: String!) {
     verifyOTP(email: $email, otp: $otp) {
       success
       message
@@ -47,18 +49,9 @@ const VERIFY_OTP_MUTATION = gql`
   }
 `;
 
-const SEND_OTP_MUTATION = gql`
-  mutation sendOTP($email: String!, $phone: String) {
-    sendOTP(email: $email, phone: $phone) {
-      success
-      message
-    }
-  }
-`;
-
-
-
+// ────────────────────────────────────────────────
 // Styled Components (unchanged)
+// ────────────────────────────────────────────────
 const Form = styled.form`
   font-family: gotham-light !important;
   width: 30vw;
@@ -144,251 +137,313 @@ const ErrorMessage = styled.span`
 export default function LoginForm() {
   const { dispatch } = useStore();
   const navigate = useNavigate();
-  const [loginMutation, {loading: loginLoading, error: loginError }] = useMutation(LOGIN_MUTATION, {
-    onError: (err) => console.error('Login mutation error:', err),
-  });
-  const [sendOTPMutation, { loading: otpLoading, error: otpError }] = useMutation(SEND_OTP_MUTATION, {
-    onError: (err) => console.error('Send OTP mutation error:', err),
-  });
-  const [verifyOTPMutation, { loading: verifyLoading, error: verifyError }] = useMutation(VERIFY_OTP_MUTATION, {
-    onError: (err) => console.error('Verify OTP mutation error:', err),
-  });
+
   const [formValues, setFormValues] = React.useState({
     email: '',
     password: '',
     googleId: '',
     otp: '',
   });
+
   const [errors, setErrors] = React.useState({
     email: '',
     password: '',
     otp: '',
-    login: '',
+    general: '',
   });
+
   const [showOTP, setShowOTP] = React.useState(false);
 
-  // Log Apollo errors for debugging
-  React.useEffect(() => {
-    if (loginError) toast.error(`Login error: ${loginError.message}`);
-    if (otpError) toast.error(`Send OTP error: ${otpError.message}`);
-    if (verifyError) toast.error(`Verify OTP error: ${verifyError.message}`);
-  }, [loginError, otpError, verifyError]);
+  const [loginMutation, { loading: loginLoading }] = useMutation(LOGIN_MUTATION);
+  const [verifyOTPMutation, { loading: verifyLoading }] = useMutation(VERIFY_OTP_MUTATION);
 
-  const handleChange = (prop) => (event) => {
-    setFormValues((old) => ({ ...old, [prop]: event.target.value }));
-    setErrors((old) => ({ ...old, [prop]: '', login: '' }));
+  const isLoading = loginLoading || verifyLoading;
+
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: '', general: '' }));
   };
 
-  const validateForm = () => {
-    let isValid = true;
-    const newErrors = { email: '', password: '', otp: '', login: '' };
+  const validateLogin = () => {
+    const newErrors = { email: '', password: '', otp: '', general: '' };
+    let valid = true;
 
-    if (!formValues.email) {
+    if (!formValues.email.trim()) {
       newErrors.email = 'Email é obrigatório';
-      isValid = false;
+      valid = false;
     } else if (!/\S+@\S+\.\S+/.test(formValues.email)) {
       newErrors.email = 'Email inválido';
-      isValid = false;
+      valid = false;
     }
 
     if (!formValues.googleId && !formValues.password) {
       newErrors.password = 'Senha é obrigatória';
-      isValid = false;
-    } else if (!formValues.googleId && formValues.password.length < 8) {
-      newErrors.password = 'A senha deve ter pelo menos 8 caracteres';
-      isValid = false;
-    }
-
-    if (showOTP && !formValues.otp) {
-      newErrors.otp = 'OTP é obrigatório';
-      isValid = false;
+      valid = false;
+    } else if (!formValues.googleId && formValues.password.length < 6) {
+      newErrors.password = 'A senha deve ter pelo menos 6 caracteres';
+      valid = false;
     }
 
     setErrors(newErrors);
-    return isValid;
+    return valid;
   };
 
-  const handleLogin = async () => {
-    if (!validateForm()) return;
+  const validateOTP = () => {
+    const newErrors = { ...errors };
+    let valid = true;
 
-    try {
-      console.log('Sending login mutation:', formValues); // Debug log
-      const { data } = await loginMutation({
-        variables: {
-          email: formValues.email,
-          password: formValues.password,
-          googleId: formValues.googleId,
-        },
-      });
-      console.log('Login response:', data); // Debug log
-      
-      if (!data?.login?.success) {
-        debugger
-        if (data?.login?.message?.includes('verify your email')) {
-          setShowOTP(true);
-          toast.info('Por favor, insira o OTP enviado para seu email/SMS');
-          return;
-        }
-        // throw new Error(data?.login?.message || 'Erro desconhecido no login');
-        // debugger
-      }
-      debugger
-      if (data?.login?.token) {
-        localStorage.setItem('authToken', data?.login.token);
-        dispatch({
-          type: 'SET_SESSION',
-          payload: { isLoggedIn: true, user: data?.login.user },
-        });
-        dispatch({
-          type: 'TOGGLE_MODAL',
-          payload: { modalName: 'login' },
-        });
-        toast.success(data?.login.message);
-        // debugger
-        navigate('/'); // Uncomment to redirect after login
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrors((old) => ({ ...old, login: error.message }));
-      toast.error(error.message);
+    if (!formValues.otp.trim()) {
+      newErrors.otp = 'OTP é obrigatório';
+      valid = false;
+    } else if (!/^\d{6}$/.test(formValues.otp)) {
+      newErrors.otp = 'OTP deve ter exatamente 6 dígitos';
+      valid = false;
     }
+
+    setErrors(newErrors);
+    return valid;
   };
 
-  const handleVerifyOTP = async () => {
-    if (!validateForm()) return;
+  const processAuthResponse = (responseData, mutationName = 'login') => {
+    const result = responseData?.[mutationName];
 
-    try {
-      console.log('Sending verify OTP mutation:', formValues); // Debug log
-      const { data } = await verifyOTPMutation({
-        variables: {
-          email: formValues.email,
-          otp: formValues.otp,
-        },
-      });
+    if (!result) {
+      throw new Error('Resposta inválida do servidor');
+    }
 
-      console.log('Verify OTP response:', data); // Debug log
-      if (!data?.verifyOTP?.success) {
-        throw new Error(data?.verifyOTP?.message || 'Erro desconhecido na verificação do OTP');
+    // Show backend-provided errors if any
+    if (result.errors?.length > 0) {
+      setErrors((prev) => ({ ...prev, general: result.errors.join(' • ') }));
+      toast.error(result.errors.join(' • '));
+      return false;
+    }
+
+    if (!result.success) {
+      setErrors((prev) => ({ ...prev, general: result.message || 'Falha na autenticação' }));
+      toast.error(result.message || 'Falha na autenticação');
+
+      // Detect need for OTP verification
+      if (
+        result.message?.toLowerCase().includes('verif') ||
+        result.message?.toLowerCase().includes('otp') ||
+        result.message?.toLowerCase().includes('não verificad')
+      ) {
+        setShowOTP(true);
+        toast.info('Por favor insira o código OTP enviado');
       }
 
-      localStorage.setItem('authToken', data.verifyOTP.token);
+      return false;
+    }
+
+    // Success path
+    if (result.token) {
+      localStorage.setItem('authToken', result.token);
+
+      const userData = result.user || { email: formValues.email };
+
       dispatch({
         type: 'SET_SESSION',
-        payload: { isLoggedIn: true, user: data.verifyOTP.user },
+        payload: { isLoggedIn: true, user: userData },
       });
+
       dispatch({
         type: 'TOGGLE_MODAL',
         payload: { modalName: 'login' },
       });
-      toast.success(data.verifyOTP.message);
-      navigate('/'); // Uncomment to redirect after OTP verification
-    } catch (error) {
-      console.error('OTP verification error:', error);
-      setErrors((old) => ({ ...old, otp: error.message }));
-      toast.error(error.message);
+
+      toast.success(result.message || 'Bem-vindo!');
+      navigate('/');
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleLogin = async () => {
+    if (!validateLogin()) return;
+
+    try {
+      const { data } = await loginMutation({
+        variables: {
+          email: formValues.email.trim(),
+          password: formValues.password || undefined,
+          googleId: formValues.googleId || undefined,
+        },
+      });
+
+      processAuthResponse(data);
+    } catch (err) {
+      const msg =
+        err.graphQLErrors?.[0]?.message ||
+        err.networkError?.result?.errors?.[0]?.message ||
+        'Erro ao tentar entrar. Verifique sua conexão.';
+      
+      setErrors((prev) => ({ ...prev, general: msg }));
+      toast.error(msg);
+      console.error('Login error:', err);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!validateOTP()) return;
+
+    try {
+      const { data } = await verifyOTPMutation({
+        variables: {
+          email: formValues.email.trim(),
+          otp: formValues.otp.trim(),
+        },
+      });
+
+      processAuthResponse(data, 'verifyOTP');
+    } catch (err) {
+      const msg =
+        err.graphQLErrors?.[0]?.message ||
+        err.networkError?.result?.errors?.[0]?.message ||
+        'Erro ao verificar o código. Tente novamente.';
+      
+      setErrors((prev) => ({ ...prev, otp: msg }));
+      toast.error(msg);
+      console.error('Verify OTP error:', err);
     }
   };
 
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        console.log('Google login token response:', tokenResponse); // Debug log
-        const userInfo = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', {
+        const res = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        }).then((res) => res.json());
+        });
 
-        console.log('Google user info:', userInfo); // Debug log
-        setFormValues((old) => ({
-          ...old,
-          email: userInfo.email,
-          googleId: userInfo.id,
+        if (!res.ok) throw new Error('Falha ao obter informações do Google');
+
+        const userInfo = await res.json();
+
+        setFormValues((prev) => ({
+          ...prev,
+          email: userInfo.email || '',
+          googleId: userInfo.id || '',
+          password: '', // clear password field
         }));
+
+        // Trigger login right after
         await handleLogin();
-      } catch (error) {
-        console.error('Google login fetch error:', error);
-        toast.error('Falha ao buscar informações do Google');
+      } catch (err) {
+        console.error('Google login failed:', err);
+        toast.error('Não foi possível autenticar com Google. Tente novamente.');
       }
     },
-    onError: () => {
-      console.error('Google login failed');
-      toast.error('Falha no login com Google');
+    onError: (error) => {
+      console.error('Google login error:', error);
+      toast.error('Falha na autenticação com Google');
     },
+    flow: 'implicit', // or 'auth-code' depending on your setup
   });
 
   return (
     <React.Fragment>
-      <Form>
-        <Typography variant="h4" sx={{ fontFamily: 'gotham-bold', textAlign: 'center', marginTop: '.8em', marginBottom: '.6em', fontSize: '3rem' }}>
+      <Form onSubmit={(e) => e.preventDefault()}>
+        <Typography variant="h4" sx={{ fontFamily: 'gotham-bold', textAlign: 'center', mb: 1 }}>
           Login
         </Typography>
-        <Typography sx={{ fontSize: '.7rem', fontFamily: 'gotham-light', textAlign: 'center', marginBottom: '.7em' }}>
-          Accesse sua conta e faça sua reserva, anuncie imóveis
+
+        <Typography sx={{ fontSize: '0.9rem', textAlign: 'center', mb: 3, color: 'text.secondary' }}>
+          Acesse sua conta para reservar ou anunciar imóveis
         </Typography>
 
-        <ModerInputContainer className="modern-input">
-          <FieldName className="field-name">Email</FieldName>
-          <ModerInput className="container-input-logo">
-            <Input type="email" placeholder="example@server.domain" value={formValues.email} onChange={handleChange('email')} />
-            <Icon><CloseIcon /></Icon>
+        {/* Email */}
+        <ModerInputContainer>
+          <FieldName>Email</FieldName>
+          <ModerInput>
+            <Input
+              type="email"
+              placeholder="exemplo@dominio.com"
+              value={formValues.email}
+              onChange={handleChange('email')}
+              disabled={isLoading}
+            />
+            {formValues.email && <Icon onClick={() => handleChange('email')({ target: { value: '' } })}><CloseIcon /></Icon>}
           </ModerInput>
           {errors.email && <ErrorMessage>{errors.email}</ErrorMessage>}
         </ModerInputContainer>
 
+        {/* Password – hidden when Google is used */}
         {!formValues.googleId && (
-          <ModerInputContainer className="modern-input">
-            <FieldName className="field-name">Palavra passe</FieldName>
-            <ModerInput className="container-input-logo">
-              <Input type="password" placeholder="mínimo 8 caracteres" value={formValues.password} onChange={handleChange('password')} />
-              <Icon><CloseIcon /></Icon>
+          <ModerInputContainer>
+            <FieldName>Palavra-passe</FieldName>
+            <ModerInput>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={formValues.password}
+                onChange={handleChange('password')}
+                disabled={isLoading}
+              />
+              {formValues.password && <Icon onClick={() => handleChange('password')({ target: { value: '' } })}><CloseIcon /></Icon>}
             </ModerInput>
             {errors.password && <ErrorMessage>{errors.password}</ErrorMessage>}
           </ModerInputContainer>
         )}
 
+        {/* OTP field – shown when required */}
         {showOTP && (
-          <ModerInputContainer className="modern-input">
-            <FieldName className="field-name">OTP</FieldName>
-            <ModerInput className="container-input-logo">
-              <Input type="text" placeholder="Digite o OTP de 6 dígitos" value={formValues.otp} onChange={handleChange('otp')} />
-              <Icon><CloseIcon /></Icon>
+          <ModerInputContainer>
+            <FieldName>Código OTP (6 dígitos)</FieldName>
+            <ModerInput>
+              <Input
+                type="text"
+                placeholder="123456"
+                value={formValues.otp}
+                onChange={handleChange('otp')}
+                maxLength={6}
+                disabled={isLoading}
+              />
+              {formValues.otp && <Icon onClick={() => handleChange('otp')({ target: { value: '' } })}><CloseIcon /></Icon>}
             </ModerInput>
             {errors.otp && <ErrorMessage>{errors.otp}</ErrorMessage>}
           </ModerInputContainer>
         )}
 
-        {errors.login && <ErrorMessage>{errors.login}</ErrorMessage>}
-        {(loginLoading || otpLoading || verifyLoading) && <Typography>Carregando...</Typography>}
+        {/* General / backend errors */}
+        {errors.general && <ErrorMessage>{errors.general}</ErrorMessage>}
 
+        {isLoading && <Typography sx={{ textAlign: 'center', mt: 2 }}>Aguarde...</Typography>}
+
+        {/* Links */}
         <Typography
-          sx={{ fontSize: '.8rem', fontFamily: 'gotham-light', textAlign: 'center', marginBottom: '.7em', textDecoration: 'underline', cursor: 'pointer' }}
+          sx={{ fontSize: '0.85rem', textAlign: 'center', my: 1.5, color: 'primary.main', cursor: 'pointer' }}
           onClick={() => {
             dispatch({ type: 'TOGGLE_MODAL', payload: { modalName: 'passwordRecover' } });
-            navigate('/auth/password-recover');
           }}
         >
-          Esqueci minha senha
+          Esqueci a palavra-passe
         </Typography>
 
         <Typography
-          sx={{ fontSize: '.8rem', fontFamily: 'gotham-medium', textAlign: 'center', marginBottom: '.7em', cursor: 'pointer' }}
+          sx={{ fontSize: '0.85rem', textAlign: 'center', mb: 2, cursor: 'pointer' }}
           onClick={() => {
             dispatch({ type: 'TOGGLE_MODAL', payload: { modalName: 'signup' } });
-            navigate('/auth/signup');
           }}
         >
-          Ainda não tenho uma conta, <span className="highlight-yellow underline">Criar uma conta</span>
+          Não tem conta? <strong style={{ color: '#d9f070' }}>Criar conta</strong>
         </Typography>
 
+        {/* Actions */}
         <SubmitButton>
           <Button
+            variant="contained"
+            fullWidth
             onClick={showOTP ? handleVerifyOTP : handleLogin}
-            disabled={loginLoading || otpLoading || verifyLoading}
+            disabled={isLoading}
+            sx={{ py: 1.5, fontWeight: 'bold' }}
           >
-            {showOTP ? 'Verificar OTP' : 'Entrar'}
+            {isLoading ? 'A processar...' : showOTP ? 'Verificar Código' : 'Entrar'}
           </Button>
-          <LogoAndText className="google-logo" onClick={() => handleGoogleLogin()}>
+
+          <LogoAndText onClick={() => !isLoading && handleGoogleLogin()}>
             <GoogleLogo />
-            <span>Logar com Google</span>
+            <span>Entrar com Google</span>
           </LogoAndText>
         </SubmitButton>
       </Form>
