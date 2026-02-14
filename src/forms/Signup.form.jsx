@@ -27,6 +27,7 @@ const Form = styled.form`
   padding-top: .4em;
 `;
 
+
 const MultipleField = styled.div`
   display: flex;
   & > *:nth-child(1) {
@@ -75,7 +76,7 @@ export default function SignupForm(props) {
     name: '',
     email: '',
     phone: '',
-    password: '',
+    password: '', 
     general: '',
   });
 
@@ -421,3 +422,31 @@ export default function SignupForm(props) {
     </React.Fragment>
   );
 }
+
+
+
+const SubmitButton = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1em;
+  & > button {
+    border: none;
+    width: 50%;
+    align-self: center;
+    padding: 1em 0;
+    border-radius: 0.5em;
+    background: #d9f070;
+  }
+`;
+
+const LogoAndText = styled.div`
+  text-align: center;
+  align-self: center;
+  display: flex;
+  margin-top: 1em;
+  & > * {
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 0.8em;
+  }
+`;

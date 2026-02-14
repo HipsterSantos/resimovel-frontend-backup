@@ -12,6 +12,7 @@ const initialState = {
   session: {
     isLoggedIn: false,
     user: null,
+    token: null
   },
   ui: {
     openLogin: false,
@@ -92,6 +93,7 @@ const ACTIONS = {
   UPDATE_SEARCH_DETAILS: 'UPDATE_SEARCH_DETAILS',
   SET_MODAL: 'SET_MODAL',
   TOGGLE_MODAL: 'TOGGLE_MODAL',
+  LOGOUT: 'LOGOUT',
 };
 
 // Reducer
@@ -145,9 +147,25 @@ const reducer = (state, { type, payload }) => {
     case ACTIONS.SET_SESSION: {
       return {
         ...state,
-        session: payload,
+        session: {
+          isLoggedIn: !!payload.user,
+          user: payload.user || null,
+          token: payload.token || null
+        },
       };
     }
+
+    case ACTIONS.LOGOUT:
+      localStorage.removeItem('authToken');
+      return {
+        ...state,
+        session: {
+          isLoggedIn: false,
+          user: null,
+          token: null,
+        },
+      };
+
     case ACTIONS.SET_LOCATION: {
       return {
         ...state,
@@ -235,11 +253,24 @@ export default function StoreProvider({ children }) {
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_API_KEY ||'AIzaSyAy5Ti-l_JVm2Iw4yKF1zhivOi98Vo69So',
         libraries,
         }), []);
+
     const { isLoaded, loadError } = useJsApiLoader(loaderOptions);
     log.info(`\n==isLoaded - ${isLoaded} loadError - ${loadError}`);
     const [state, dispatch] = useReducer(reducer, {
         ...initialState
     });
+
+    useEffect(() => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        // You could also fetch user info here if needed
+        // For now we assume token is enough to consider logged in
+        dispatch({
+          type: ACTIONS.SET_SESSION,
+          payload: { token, user: null }, // user can be fetched later if needed
+        });
+      }
+    }, []);
 
     useEffect(() => {
         if (isLoaded) {
@@ -288,7 +319,7 @@ export default function StoreProvider({ children }) {
         }
       }, [isLoaded]);
     
-      const getAddressComponent = (components, type) =>
+  const getAddressComponent = (components, type) =>
         components.find((component) => component.types.includes(type))?.long_name || '';
     
   const dispatchAsync = useCallback(async (asyncFunction) => {
@@ -317,7 +348,7 @@ export const redoState = () => ({ type: ACTIONS.REDO });
 export const setProperty = (key, value) => ({ type: ACTIONS.SET_PROPERTY, payload: { key, value } });
 export const updateTrafficData = (payload) => ({ type: ACTIONS.UPDATE_TRAFFIC_DATA, payload });
 export const setHouses = (payload) => ({ type: ACTIONS.SET_HOUSES, payload });
-export const setSession = (payload) => ({ type: ACTIONS.SET_SESSION, payload });
+// export const setSession = (payload) => ({ type: ACTIONS.SET_SESSION, payload });
 export const setLocation = (payload) => ({ type: ACTIONS.SET_LOCATION, payload });
 export const setSuggestions = (payload) => ({ type: ACTIONS.SET_SUGGESTIONS, payload });
 export const setMapInstance = (payload) => ({ type: ACTIONS.SET_MAP_INSTANCE, payload });
@@ -326,3 +357,8 @@ export const toggleModal = (modalName) => ({
   type: ACTIONS.TOGGLE_MODAL,
   payload: { modalName },
 });
+
+// new action creators 
+
+export const setSession = (payload) => ({ type: ACTIONS.SET_SESSION, payload });
+export const logout = () => ({ type: ACTIONS.LOGOUT });
