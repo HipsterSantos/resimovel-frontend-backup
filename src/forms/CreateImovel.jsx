@@ -34,8 +34,9 @@ height: auto;
 `;
 const CenterSide = styled.div`
 flex:5;
-diplay: flex;
+display: flex;
 flex-direction: column;
+height: 100vh;
 `;
 
 const List = styled.li`
@@ -53,6 +54,11 @@ background: transparent;
 border: 1px solid #353535;
 padding: 1em 3em;
 border-radius: .8em;
+
+&.cursor-disabled{
+    cursor: not-allowed;
+    opacity: .5;
+}
 `
 const ForwardBtn = styled.button`
 color: #353535;
@@ -105,22 +111,70 @@ steps = steps.map( (item,index)=> ({
 console.log('===============step-componentsToRender---',steps)
 
 export default function CreateImovelForm(props){
+    
     const [values, setValues] = useState({
-        activeStep: steps.filter((_,index)=>_.active && (index))
+        activeStep: steps.filter((_,index)=>_.active ).keys().next().value
     })
     console.log('\n\n======value---',values)
+    console.log('\n\n======value---',steps.filter((_,index)=>_.active && (index)))
 
-    const handleChange= (prop)=>({target:{value=null}=null })=>{
-        console.log('\n\n==========handle-change --=======',prop,value)
-        setValues(oldValue=>({
-            [prop]: values,
-            ...oldValue
-        }))
+    // Centralized form state for ALL steps
+  const [formValues, setFormValues] = useState({
+    houseType: null,
+    houseTraitType: null,
+    businessType: 'venda',          // "venda" | "arrendamento" | null (single value)
+    fullAddress: '',
+    street: '',
+    houseNumber: '',
+    zipCode: '',
+    phone: '',
+    name:'',    
+    notifyMeThrough:null,
+    // Add fields for future steps here (photos, price, description, etc.)
+  });
+
+//   const handleChange = (field) => (value) => {
+//     setFormValues(prev => ({
+//       ...prev,
+//       [field]: value
+//     }));
+//   };
+
+    const handleChange = (field) => (value) => {
         // debugger
-    }
+        setFormValues(prev => ({ ...prev, [field]: value }));
+        console.log(`Field ${field} updated to:`, value);
+        console.log(`Forms value ${field} updated to:`, formValues);
+    };
     const handleCloseDialog = ()=>{
 
     }
+
+    const handleNext = ()=>{
+        const currentActiveIndex = steps.findIndex(_=>_.active)
+        if(currentActiveIndex < steps.length - 1){
+            steps[currentActiveIndex].active = false;
+            steps[currentActiveIndex + 1].active = true;
+            setValues(oldValue=>({
+                ...oldValue,
+                activeStep: currentActiveIndex + 1
+            }))
+        }
+    }
+
+    const handleBack = ()=>{
+        const currentActiveIndex = steps.findIndex(_=>_.active)
+        if(currentActiveIndex > 0){
+            steps[currentActiveIndex].active = false;
+            steps[currentActiveIndex - 1].active = true;
+            setValues(oldValue=>({
+                ...oldValue,
+                activeStep: currentActiveIndex - 1
+            }))
+            console.log('===active step ', values.activeStep)
+        }
+    }
+
     return (
         <Main className="create-imovel-component">
             <LeftSide className="left-side list-of-steps">
@@ -142,14 +196,15 @@ export default function CreateImovelForm(props){
             <CenterSide className="center-side">
                 {
                     steps.map( (item,index)=> 
-                        (componentsToRender({handleChange,item,index})[index]) 
+                        index === values.activeStep && ( <div key={`${item}-${index}`}>
+                            {componentsToRender({values:formValues,handleChange,item,index})[index]} 
+                        </div>
+                    )
                     )
                 }
                 <Box className="action-buttons">
-                    <BackwardBtn className="backward-btn" onClick={handleBack}>Voltar</BackwardBtn>
-                    <ForwardBtn className="forward-btn" onClick={handleNext}>
-                        {activeStep === steps.length - 1 ? 'Finalizar' : 'Continuar'}
-                    </ForwardBtn>
+                    <BackwardBtn className={"backward-btn " + (values.activeStep==0?' cursor-disabled':'')} disabled={values.activeStep === 0}  onClick={handleBack}>Voltar</BackwardBtn>
+                    <ForwardBtn className="forward-btn" onClick={handleNext}>Continuar</ForwardBtn>
                 </Box>
             </CenterSide>
             <RightSide>
@@ -188,11 +243,30 @@ export default function CreateImovelForm(props){
 
 
 
-const StepOne = ({handleChange,...props})=>{
+const StepOne = ({values,handleChange,...props})=>{
     const [haveTraits,setHaveTraits] = useState(false);
     const stepOneValidation = {
         
     }
+
+    const [selectedTrait, setSelectedTrait] = useState(null);
+
+    // Local errors (optional – can be passed from parent or managed here)
+    const [localErrors, setLocalErrors] = useState({});
+
+    // Sync local state with parent's selected trait
+    useEffect(() => {
+        if (values.houseType) {
+        const trait = houseTraits.find(t => t.value === values.houseType);
+        setSelectedTrait(trait || null);
+        }
+    }, [values.houseType]);
+
+    // Toggle business type (mutually exclusive)
+    const toggleBusiness = (type) => {
+        handleChange('businessType')(values.businessType === type ? null : type);
+    };
+
     const handleFilterHouseTratis = (event)=>{
         // if (props == 'houseTraits')
         console.log('\n\n==========StepOne --=======',event,props)
@@ -222,7 +296,10 @@ const StepOne = ({handleChange,...props})=>{
                 handleChange('houseTraits')(e)
             }}
             debugger
-            placeholder="Casas e apartamento"/>
+            placeholder="Casas e apartamento"
+            error={!!localErrors.houseType}
+            helperText={localErrors.houseType}
+            />
         {
             haveTraits.traits 
                 && haveTraits.traits?.values?.length > 0 && 
@@ -255,14 +332,18 @@ const StepOne = ({handleChange,...props})=>{
                 <CheckBoxWithIcon  
                     title="Venda" 
                     description="Vivenda, Apartamentos, Terreno..." 
-                    selected={true}
+                    // selected={true}
+                    onClick={() => toggleBusiness('venda')}
+                    selected={values.businessType === 'venda'}
                     width={80}
-                    icon={<HouseSolid/>}/>
+                    icon={<HouseSolid/>}
+                    />
                 
                 <CheckBoxWithIcon  
                     title="Arrendamento" 
                     description="Vivenda, Apartamentos,Terreno..." 
-                    selected={false}
+                    onClick={() => toggleBusiness('arrendamento')}
+                    selected={values.businessType === 'arrendamento'}
                     width={80}
                     icon={<HouseSolid/>}/>
         </>):
@@ -298,24 +379,31 @@ const StepOne = ({handleChange,...props})=>{
             property="Bairro" 
             name="full_address" 
             placeholder="Palanca ( Kilamba Kiaxi)"
+            onSelect={handleChange('fullAddress')}
         />
         <CustomInput 
             width={80}
             property="Rua" 
             name="street" 
-            placeholder="Colocar o nome ou número da rua"/>
+            placeholder="Colocar o nome ou número da rua"
+            onChange={(e)=>handleChange('street')(e.target.value)}
+            />
         <Split>
             
             <CustomInput 
                 width={50}
                 property="Numero da casa" 
                 name="house_number" 
-                placeholder="2..."/>
+                placeholder="2..."
+                onChange={(e)=>handleChange('houseNumber')(e.target.value)}
+                />
             <CustomInput 
                 width={50}
                 property="Códico postal" 
                 name="zip_code" 
-                placeholder="Opcional"/>
+                placeholder="Opcional"
+                onChange={(e)=>handleChange('zipCode')(e.target.value)}
+                />
         </Split>
         
         
@@ -325,12 +413,7 @@ const StepOne = ({handleChange,...props})=>{
 }
     
 const StepTwo = (props)=>{
-    return(
-        <div>
-            <StepOne></StepOne>
-            <h3>we're in step two</h3>
-        </div>
-    )
+
 }
 
 const StepThree = (props)=>{

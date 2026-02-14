@@ -33,11 +33,12 @@ margin-right: auto;
 `;
 
 export default function CheckBoxWithIcon(props){
-    const {width,selected,title,description} = props
+    const {width,selected,title,description,onClick} = props
     return (
         <CheckBoxWithIconContainer 
             width={width} 
             selected={selected}
+            onClick={onClick}
             >
             <Icon border={true}>
                 {props.icon}

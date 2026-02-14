@@ -1,19 +1,11 @@
-import React, {
-  useContext,
-  useState,
-  useRef,
-  useEffect,
-} from 'react';
+import React, {useContext, useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import ChevronIcon from '@mui/icons-material/ChevronRight';
 import { Typography } from '@mui/material';
 
 import { useStore } from '../../contexts/states.store.context';
 import { GoogleMapsContext } from '../../contexts/google.map.context';
-import { Logger } from '../../helpers/logging';
-
-const logger = new Logger('GoogleMapDropdown');
-
+import Logger from '../../helpers/logging';
 
 const ModerInputContainer = styled.div`
   display: flex;
@@ -72,20 +64,19 @@ const Paper = styled.div`
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY;
 
-export default function GoogleMapDropdown(props) {
-  const {
-    property,
-    name,
-    showTitle = true,
-    positionTop,
-    onSelect,
-    width,
-    leftIcon,
-    rightIcon,
-    type,
-    placeholder,
-  } = props;
+const logger = new Logger('GoogleMapDropdown.jsx');
 
+export default function GoogleMapDropdown({
+  property,
+  showTitle = true,
+  positionTop,
+  onSelect,
+  width,
+  leftIcon,
+  rightIcon,
+  type,
+  placeholder,
+}) {
   const { state, dispatch } = useStore();
   const { isLoaded, loadError } = useContext(GoogleMapsContext);
 
@@ -93,24 +84,44 @@ export default function GoogleMapDropdown(props) {
   const [suggestions, setSuggestions] = useState([]);
   const [openPaper, setOpenPaper] = useState(false);
 
-  const inputRef = useRef(null);
   const autoCompleteService = useRef(null);
   const placesService = useRef(null);
 
-  /* ----------------------------------
-     Init Google Places Services
-  ---------------------------------- */
+  /* ============================
+     MAPS + PLACES BOOTSTRAP
+  ============================ */
 
   useEffect(() => {
-    if (!isLoaded) {
-      logger.debug('Waiting for Google Maps to load...');
+    logger.info('Maps context state', { isLoaded, loadError });
+
+    if (loadError) {
+      logger.error('Google Maps loadError', loadError);
       return;
     }
 
-    if (!window.google?.maps?.places) {
-      logger.warn('Google Maps loaded, but Places library not ready yet');
+    if (!isLoaded) {
+      logger.debug('⏳ Waiting for Google Maps script...');
       return;
     }
+
+    if (!window.google) {
+      logger.error('❌ window.google is missing');
+      return;
+    }
+
+    if (!window.google.maps) {
+      logger.error('❌ window.google.maps is missing');
+      return;
+    }
+
+    if (!window.google.maps.places) {
+      logger.error(
+        '❌ Places library missing — check libraries:["places"]'
+      );
+      return;
+    }
+
+    logger.info('✅ Google Maps + Places available');
 
     if (!autoCompleteService.current) {
       autoCompleteService.current =
@@ -121,49 +132,77 @@ export default function GoogleMapDropdown(props) {
           document.createElement('div')
         );
 
-      logger.info('Google Places services initialized');
+      logger.success?.('✅ Places services initialized')
+        ?? logger.info('Places services initialized');
     }
-  }, [isLoaded]);
+  }, [isLoaded, loadError]);
 
-  /* ----------------------------------
-     Input change
-  ---------------------------------- */
+  /* ============================
+     INPUT HANDLER
+  ============================ */
 
   const handleInputChange = (event) => {
     const value = event.target.value;
     setSearch(value);
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', payload: value });
 
-    if (!value || !autoCompleteService.current) {
+    dispatch({
+      type: 'UPDATE_SEARCH_INPUT',
+      payload: value,
+    });
+
+    logger.debug('User input', value);
+
+    if (!value.trim()) {
       setSuggestions([]);
       setOpenPaper(false);
+      logger.debug('Input empty → cleared suggestions');
       return;
     }
 
+    if (!autoCompleteService.current) {
+      logger.error('❌ AutocompleteService not initialized');
+      return;
+    }
+
+    const request = {
+      input: value,
+      types: ['geocode'],
+      componentRestrictions: { country: 'AO' },
+    };
+
+    logger.debug('Autocomplete request payload', request);
+
     autoCompleteService.current.getPlacePredictions(
-      {
-        input: value,
-        types: ['geocode'],
-      },
+      request,
       (predictions, status) => {
-        if (
-          status ===
-          window.google.maps.places.PlacesServiceStatus.OK
-        ) {
+        logger.debug('Autocomplete response', {
+          status,
+          predictionsCount: predictions?.length,
+        });
+
+        if (status === 'OK' && predictions?.length) {
           setSuggestions(predictions);
           setOpenPaper(true);
         } else {
           setSuggestions([]);
+          setOpenPaper(false);
+
+          logger.error('Autocomplete failed', {
+            status,
+            meaning: window.google.maps.places.PlacesServiceStatus[status],
+          });
         }
       }
     );
   };
 
-  /* ----------------------------------
-     Select suggestion
-  ---------------------------------- */
+  /* ============================
+     SELECT HANDLER
+  ============================ */
 
   const handleSelectSuggestion = (suggestion) => {
+    logger.info('Suggestion selected', suggestion);
+
     setSearch(suggestion.description);
     setOpenPaper(false);
 
@@ -172,29 +211,25 @@ export default function GoogleMapDropdown(props) {
       payload: suggestion.description,
     });
 
-    onSelect?.({
-      target: { value: suggestion },
-    });
+    onSelect?.({ target: { value: suggestion } });
 
     placesService.current?.getDetails(
       { placeId: suggestion.place_id },
       (result, status) => {
-        if (
-          status ===
-          window.google.maps.places.PlacesServiceStatus.OK
-        ) {
+        logger.debug('Place details response', { status, result });
+
+        if (status === 'OK') {
           dispatch({
             type: 'UPDATE_SEARCH_DETAILS',
             payload: result,
           });
-          logger.debug('Place details loaded', result);
         }
       }
     );
   };
 
   /* ============================
-     Render
+     RENDER
   ============================ */
 
   return (
@@ -205,7 +240,6 @@ export default function GoogleMapDropdown(props) {
         <Icon>{leftIcon}</Icon>
 
         <Input
-          ref={inputRef}
           type={type}
           placeholder={placeholder}
           value={search || state.searchBarFilter.searchInput || ''}
@@ -213,15 +247,16 @@ export default function GoogleMapDropdown(props) {
           disabled={!isLoaded || !!loadError}
         />
 
-        <Icon onClick={() => setOpenPaper(false)}>
-          {rightIcon || <ChevronIcon />}
-        </Icon>
+        <Icon>{rightIcon || <ChevronIcon />}</Icon>
       </ModerInput>
 
       {openPaper && (
         <Paper positionTop={positionTop}>
           {suggestions.map((s, i) => (
-            <Typography key={i} onClick={() => handleSelectSuggestion(s)}>
+            <Typography
+              key={i}
+              onClick={() => handleSelectSuggestion(s)}
+            >
               {s.description}
             </Typography>
           ))}
