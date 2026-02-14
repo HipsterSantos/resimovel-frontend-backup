@@ -16,7 +16,7 @@ import Avatar from '../../../public/svg/circle-avatar';
 
 import Close from '../../../public/svg/close';
 import { MenuIcon } from '../../../public/svg/menu-icon';
-import { useStore } from '../../contexts/states.store.context';
+import { logout, useStore } from '../../contexts/states.store.context';
 import PasswordRecoverForm from '../../forms/Password.recover';
 import { useNavigate } from 'react-router-dom';
 
@@ -182,7 +182,13 @@ export default function MenuComponent(){
         newDivs[index] = !divsToOpen[index]
         setDivsToOpen(newDivs)
     }
-  
+    
+    const handleLogout = () => {
+        dispatch(logout());
+        dispatch(toggleModal('login', false)); // just in case
+        toast.info('Sessão terminada');
+        navigate('/');
+    };
     const handleClose = (who) => {
         dispatch({
             type: 'TOGGLE_MODAL',
@@ -364,7 +370,7 @@ export default function MenuComponent(){
             {state.modal.signup.open && <SignupForm /> } 
             {state.modal.login.open &&  <LoginForm />}
             {state.modal.passwordRecover.open &&  <PasswordRecoverForm />}
-
+ 
         </FullScreenDialog> 
         <FullScreenDialog
          open={state.modal.createImovel.open}

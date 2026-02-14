@@ -1,9 +1,19 @@
-import React, {useContext, useState, useRef, useEffect } from 'react';
+import React, {
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+} from 'react';
 import styled from 'styled-components';
 import ChevronIcon from '@mui/icons-material/ChevronRight';
 import { Typography } from '@mui/material';
 
 import { useStore } from '../../contexts/states.store.context';
+import { GoogleMapsContext } from '../../contexts/google.map.context';
+import { Logger } from '../../helpers/logging';
+
+const logger = new Logger('GoogleMapDropdown');
+
 
 const ModerInputContainer = styled.div`
   display: flex;
@@ -62,157 +72,161 @@ const Paper = styled.div`
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY;
 
-export default function GoogleMapDropdown({
-  property,
-  name,
-  showTitle = true,
-  value = '',
-  positionTop,
-  onSelect,
-  data = [],
-  autoComplete = true,
-  width,
-  leftIcon,
-  rightIcon,
-  type,
-  placeholder,
-}) {
+export default function GoogleMapDropdown(props) {
+  const {
+    property,
+    name,
+    showTitle = true,
+    positionTop,
+    onSelect,
+    width,
+    leftIcon,
+    rightIcon,
+    type,
+    placeholder,
+  } = props;
+
   const { state, dispatch } = useStore();
-  const { isLoaded } = state.googleMapStatus;
-  const { searchBarFilter } = state;
-  const [search,setSearch] = useState('')
+  const { isLoaded, loadError } = useContext(GoogleMapsContext);
+
+  const [search, setSearch] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [openPaper, setOpenPaper] = useState(false);
-  const [country, setCountry] = useState('AO');
-  const [details, setDetails] = useState(null);
 
   const inputRef = useRef(null);
   const autoCompleteService = useRef(null);
-  const placeService = useRef(null);
-  console.log('\n=isloaded', isLoaded)
-  console.log('\n=state', state)
+  const placesService = useRef(null);
+
+  /* ----------------------------------
+     Init Google Places Services
+  ---------------------------------- */
+
   useEffect(() => {
-    if (isLoaded && inputRef.current) {
-      autoCompleteService.current = new window.google.maps.places.AutocompleteService();
-      placeService.current = new window.google.maps.places.PlacesService(document.createElement('div'));
-      getCurrentLocation();
-      // debugger
-    }
-  }, [isLoaded]);
-
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyAy5Ti-l_JVm2Iw4yKF1zhivOi98Vo69So`)
-            .then(response => response.json())
-            .then(data => {
-              const countryComponent = data.results[0].address_components.find(component => component.types.includes('country'));
-              setCountry(countryComponent ? countryComponent.short_name : 'AO');
-            })
-            .catch(() => {
-              setCountry('AO');
-            });
-        },
-        () => {
-          setCountry('AO');
-        }
-      );
-    } else {
-      setCountry('AO');
-    }
-  };
-
-  const handleInputChange = (event) => {
-    const input = event.target.value;
-    setSearch(input)
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', payload: input });
-
-    if (input === '') {
-      setOpenPaper(false);
-      setSuggestions([]);
+    if (!isLoaded) {
+      logger.debug('Waiting for Google Maps to load...');
       return;
     }
 
-    if (autoCompleteService.current) {
-      autoCompleteService.current.getPlacePredictions(
-        {
-          input,
-          componentRestrictions: { country },
-          types: ['geocode'],
-        },
-        (predictions, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-            setSuggestions(predictions);
-            setOpenPaper(true);
-            // debugger
-          } else {
-            setSuggestions([]);
-          }
-        }
-      );
+    if (!window.google?.maps?.places) {
+      logger.warn('Google Maps loaded, but Places library not ready yet');
+      return;
     }
+
+    if (!autoCompleteService.current) {
+      autoCompleteService.current =
+        new window.google.maps.places.AutocompleteService();
+
+      placesService.current =
+        new window.google.maps.places.PlacesService(
+          document.createElement('div')
+        );
+
+      logger.info('Google Places services initialized');
+    }
+  }, [isLoaded]);
+
+  /* ----------------------------------
+     Input change
+  ---------------------------------- */
+
+  const handleInputChange = (event) => {
+    const value = event.target.value;
+    setSearch(value);
+    dispatch({ type: 'UPDATE_SEARCH_INPUT', payload: value });
+
+    if (!value || !autoCompleteService.current) {
+      setSuggestions([]);
+      setOpenPaper(false);
+      return;
+    }
+
+    autoCompleteService.current.getPlacePredictions(
+      {
+        input: value,
+        types: ['geocode'],
+      },
+      (predictions, status) => {
+        if (
+          status ===
+          window.google.maps.places.PlacesServiceStatus.OK
+        ) {
+          setSuggestions(predictions);
+          setOpenPaper(true);
+        } else {
+          setSuggestions([]);
+        }
+      }
+    );
   };
+
+  /* ----------------------------------
+     Select suggestion
+  ---------------------------------- */
 
   const handleSelectSuggestion = (suggestion) => {
-
-    dispatch({ type: 'UPDATE_SEARCH_INPUT', payload: suggestion.description });
+    setSearch(suggestion.description);
     setOpenPaper(false);
 
-    if (onSelect) {
-      onSelect({
-        target: {
-          value: suggestion,
-        },
-      });
-      // debugger
-    }
-    if (placeService.current) {
-      placeService.current.getDetails({ placeId: suggestion.place_id }, (result, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-          setDetails(result);
-          dispatch({ type: 'UPDATE_SEARCH_DETAILS', payload: result });
+    dispatch({
+      type: 'UPDATE_SEARCH_INPUT',
+      payload: suggestion.description,
+    });
+
+    onSelect?.({
+      target: { value: suggestion },
+    });
+
+    placesService.current?.getDetails(
+      { placeId: suggestion.place_id },
+      (result, status) => {
+        if (
+          status ===
+          window.google.maps.places.PlacesServiceStatus.OK
+        ) {
+          dispatch({
+            type: 'UPDATE_SEARCH_DETAILS',
+            payload: result,
+          });
+          logger.debug('Place details loaded', result);
         }
-      });
-      debugger
-    }
+      }
+    );
   };
 
+  /* ============================
+     Render
+  ============================ */
+
   return (
-    <ModerInputContainer className={`modern-input-${name}`} width={width}>
+    <ModerInputContainer width={width}>
       {showTitle && <FieldName>{property}</FieldName>}
+
       <ModerInput>
         <Icon>{leftIcon}</Icon>
+
         <Input
           ref={inputRef}
           type={type}
           placeholder={placeholder}
-          value={search || searchBarFilter.searchInput || ''}
+          value={search || state.searchBarFilter.searchInput || ''}
           onChange={handleInputChange}
+          disabled={!isLoaded || !!loadError}
         />
-        <Icon
-          onClick={() => {
-            setOpenPaper(!openPaper);
-            if (rightIcon) {
-              dispatch({ type: 'UPDATE_SEARCH_INPUT', payload: '' });
-            }
-          }}
-        >
-          {rightIcon || <ChevronIcon color="#A7A7AF" />}
+
+        <Icon onClick={() => setOpenPaper(false)}>
+          {rightIcon || <ChevronIcon />}
         </Icon>
       </ModerInput>
-      <Paper className="dropdown-paper-body" positionTop={positionTop} style={{ display: openPaper ? 'block' : 'none' }}>
-        {suggestions.map((suggestion, index) => (
-          <Typography
-            key={index}
-            className="houseOption"
-            onClick={() => handleSelectSuggestion(suggestion)}
-          >
-            {suggestion.description}
-          </Typography>
-        ))}
-      </Paper>
+
+      {openPaper && (
+        <Paper positionTop={positionTop}>
+          {suggestions.map((s, i) => (
+            <Typography key={i} onClick={() => handleSelectSuggestion(s)}>
+              {s.description}
+            </Typography>
+          ))}
+        </Paper>
+      )}
     </ModerInputContainer>
   );
 }

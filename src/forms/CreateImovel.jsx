@@ -146,8 +146,10 @@ export default function CreateImovelForm(props){
                     )
                 }
                 <Box className="action-buttons">
-                    <BackwardBtn className="backward-btn">Voltar</BackwardBtn>
-                    <ForwardBtn className="forward-btn">Continuar</ForwardBtn>
+                    <BackwardBtn className="backward-btn" onClick={handleBack}>Voltar</BackwardBtn>
+                    <ForwardBtn className="forward-btn" onClick={handleNext}>
+                        {activeStep === steps.length - 1 ? 'Finalizar' : 'Continuar'}
+                    </ForwardBtn>
                 </Box>
             </CenterSide>
             <RightSide>
@@ -323,7 +325,12 @@ const StepOne = ({handleChange,...props})=>{
 }
     
 const StepTwo = (props)=>{
-
+    return(
+        <div>
+            <StepOne></StepOne>
+            <h3>we're in step two</h3>
+        </div>
+    )
 }
 
 const StepThree = (props)=>{
