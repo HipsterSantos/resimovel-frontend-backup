@@ -18,6 +18,37 @@ const MAX_HISTORY = 20;
 ============================ */
 
 const initialState = {
+
+    createImovelDraft: {
+    // Step 1
+    houseType: null,
+    houseTraitType: null,
+    businessType: 'venda',
+
+    fullAddress: '',
+    street: '',
+    houseNumber: '',
+    zipCode: '',
+
+    // Step 2+
+    name: '',
+    phone: '',
+
+    // Step 3
+    houseStatus: [],
+    otherTraits: [],
+
+    // Step 4+
+    media: {
+      photos: [],
+      videos: [],
+      licenseId: '',
+    },
+
+    // Step 5
+    plan: null,
+  },
+
   session: {
     isLoggedIn: false,
     user: null,
@@ -94,21 +125,21 @@ const ACTIONS = {
   RESET: 'RESET',
   UNDO: 'UNDO',
   REDO: 'REDO',
-
-  SET_PROPERTY: 'SET_PROPERTY',
-  UPDATE_TRAFFIC_DATA: 'UPDATE_TRAFFIC_DATA',
-  SET_HOUSES: 'SET_HOUSES',
-
-  SET_SESSION: 'SET_SESSION',
   LOGOUT: 'LOGOUT',
 
+  SET_PROPERTY: 'SET_PROPERTY',
+  SET_HOUSES: 'SET_HOUSES',
+  SET_SESSION: 'SET_SESSION',
   SET_LOCATION: 'SET_LOCATION',
   SET_SUGGESTIONS: 'SET_SUGGESTIONS',
   SET_MAP_INSTANCE: 'SET_MAP_INSTANCE',
+  SET_MODAL: 'SET_MODAL',
+  
+  UPDATE_TRAFFIC_DATA: 'UPDATE_TRAFFIC_DATA',
   UPDATE_SEARCH_DETAILS: 'UPDATE_SEARCH_DETAILS',
   UPDATE_SEARCH_INPUT: 'UPDATE_SEARCH_INPUT',
+  UPDATE_CREATE_IMOVEL: 'UPDATE_CREATE_IMOVEL',
 
-  SET_MODAL: 'SET_MODAL',
   TOGGLE_MODAL: 'TOGGLE_MODAL',
 };
 
@@ -157,6 +188,17 @@ const reducer = (state, { type, payload }) => {
           ...payload.value,
         },
       };
+      //update create imovel draft 
+
+      case ACTIONS.UPDATE_CREATE_IMOVEL:
+      return {
+        ...state,
+        createImovelDraft: {
+          ...state.createImovelDraft,
+          ...payload,
+        },
+      };
+
 
     case ACTIONS.UPDATE_TRAFFIC_DATA:
       return {
@@ -377,4 +419,10 @@ export const setDetails = payload => ({
 export const toggleModal = modalName => ({
   type: ACTIONS.TOGGLE_MODAL,
   payload: { modalName },
+});
+
+// update create imovel draft
+export const updateCreateImovel = payload => ({
+  type: ACTIONS.UPDATE_CREATE_IMOVEL,
+  payload,
 });

@@ -15,6 +15,9 @@ import MapMarkerSolid from "@svg/map-marker-new";
 
 import { houseTraits, typeOfBusiness,truncateWords, createImovelSteps} from "../helpers/index";
 import GoogleMapDropdown from "../components/google-map-dropdown ";
+import { updateCreateImovel, useStore } from '../contexts/states.store.context';
+
+
 
 const Main  = styled.div`
 display: flex;
@@ -105,6 +108,62 @@ const Split = styled.div`
             // margin-right: 1.5em;
     }
 `;
+
+// Step three styling
+
+const StatusWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8em;
+  margin-top: 1em;
+`;
+
+const StatusPill = styled.button`
+  padding: 0.6em 1.4em;
+  border-radius: 0.7em;
+  border: none;
+  font-family: gotham-medium;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  background: ${({ active }) => (active ? '#6B8CF7' : '#f3f4f6')};
+  color: ${({ active }) => (active ? '#fff' : '#111')};
+
+  transition: all 0.25s ease;
+
+  &:hover {
+    background: ${({ active }) => (active ? '#5a7be0' : '#e6e7eb')};
+  }
+`;
+
+const TraitsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2em;
+  margin-top: 1.2em;
+`;
+
+const InputsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.4em;
+  margin-top: 1.2em;
+`;
+
+const DescriptionBox = styled.textarea`
+  width: 100%;
+  min-height: 140px;
+  margin-top: 1em;
+  padding: 1em;
+  border-radius: 0.8em;
+  border: none;
+  background: #f7f8fa;
+  resize: vertical;
+  font-family: gotham-light;
+`;
+
+
+// =================================
 
 const HouseTypeFilter = styled.div`
         margin-left: 2em;
@@ -284,37 +343,17 @@ export default function CreateImovelForm(props){
     const [values, setValues] = useState({
         activeStep: steps.filter((_,index)=>_.active ).keys().next().value
     })
+    const { state, dispatch } = useStore();
+    const formValues = state.createImovelDraft;
+
+    const handleChange = (field) => (value) => {
+        dispatch(updateCreateImovel({ [field]: value }));
+    };
     console.log('\n\n======value---',values)
     console.log('\n\n======value---',steps.filter((_,index)=>_.active && (index)))
 
     // Centralized form state for ALL steps
-  const [formValues, setFormValues] = useState({
-    houseType: null,
-    houseTraitType: null,
-    businessType: 'venda',          // "venda" | "arrendamento" | null (single value)
-    fullAddress: '',
-    street: '',
-    houseNumber: '',
-    zipCode: '',
-    phone: '',
-    name:'',    
-    notifyMeThrough:null,
-    // Add fields for future steps here (photos, price, description, etc.)
-  });
 
-//   const handleChange = (field) => (value) => {
-//     setFormValues(prev => ({
-//       ...prev,
-//       [field]: value
-//     }));
-//   };
-
-    const handleChange = (field) => (value) => {
-        // debugger
-        setFormValues(prev => ({ ...prev, [field]: value }));
-        console.log(`Field ${field} updated to:`, value);
-        console.log(`Forms value ${field} updated to:`, formValues);
-    };
     const handleCloseDialog = ()=>{
 
     }
@@ -417,21 +456,15 @@ const StepOne = ({values,handleChange,...props})=>{
     const stepOneValidation = {
         
     }
-
     const [selectedTrait, setSelectedTrait] = useState(null);
-
-    // Local errors (optional – can be passed from parent or managed here)
     const [localErrors, setLocalErrors] = useState({});
+    const [selectedHouseType, setSelectedHouseType] = useState(null);
 
-    // Sync local state with parent's selected trait
-    // useEffect(() => {
-    //     if (values.houseType) {
-    //     const trait = houseTraits.find(t => t.value === values.houseType);
-    //     setSelectedTrait(trait || null);
-    //     }
-    // }, [values.houseType]);
-
-    // Toggle business type (mutually exclusive)
+    const handleHouseTypeSelect = (item) => {
+        setSelectedHouseType(item);
+        handleChange('houseType')(item.label);
+    };
+    
     const toggleBusiness = (type) => {
         handleChange('businessType')(values.businessType === type ? null : type);
     };
@@ -461,14 +494,15 @@ const StepOne = ({values,handleChange,...props})=>{
             positionTop={9} 
             autoComplete={true}
             onSelect={(e)=>{
-                handleFilterHouseTratis(e)
-                handleChange('houseTraits')(e)
+                // handleFilterHouseTratis(e)
+                // handleChange('houseTraits')(e)
+                handleHouseTypeSelect(e)
             }}
             debugger
             placeholder="Casas e apartamento"
             error={!!localErrors.houseType}
             helperText={localErrors.houseType}
-            />
+        />
         {
             haveTraits.traits 
                 && haveTraits.traits?.values?.length > 0 && 
@@ -502,7 +536,7 @@ const StepOne = ({values,handleChange,...props})=>{
                     title="Venda" 
                     description="Vivenda, Apartamentos, Terreno..." 
                     // selected={true}
-                    onClick={() => toggleBusiness('venda')}
+                    onClick={() => handleChange('businessType')('venda')}
                     selected={values.businessType === 'venda'}
                     width={80}
                     icon={<HouseSolid/>}
@@ -511,7 +545,7 @@ const StepOne = ({values,handleChange,...props})=>{
                 <CheckBoxWithIcon  
                     title="Arrendamento" 
                     description="Vivenda, Apartamentos,Terreno..." 
-                    onClick={() => toggleBusiness('arrendamento')}
+                    onClick={() => handleChange('businessType')('arrendamento')}
                     selected={values.businessType === 'arrendamento'}
                     width={80}
                     icon={<HouseSolid/>}/>
@@ -603,9 +637,24 @@ const StepTwo = (props)=>{
     </StepTwoContainer>)
 }
 
-const StepThree = (props)=>{
+const StepThree = ({values,handleChange})=>{
 
     const [selectedTraits, setSelectedTraits] = useState([]);
+    const [selectedStatus, setSelectedStatus] = useState([]);
+
+    const toggleStatus = (status) => {
+        setSelectedStatus(prev =>
+        prev.includes(status)
+            ? prev.filter(s => s !== status)
+            : [...prev, status]
+        );
+
+        handleChange('houseStatus')(
+        selectedStatus.includes(status)
+            ? selectedStatus.filter(s => s !== status)
+            : [...selectedStatus, status]
+        );
+    };
 
     const toggleTrait = (trait) => {
     setSelectedTraits(prev =>
@@ -630,13 +679,28 @@ const StepThree = (props)=>{
             </Typography>
             <Box className="house_status">
                 <h3>Estado do imovel</h3>
-                <HouseTypeFilter className="availables-house-types">
-                    {
-                        houseTraits.map((item,index)=>(
-                            <button key={index} className={`btn-filter ${index==3 && 'selected'}`}>{item.label}</button>
-                        ))
-                    }
-                </HouseTypeFilter>
+                <h3>Estado</h3>
+                <StatusWrapper>
+                {[
+                    'Novo',
+                    'Usado',
+                    'Em construção',
+                    'Renovado',
+                    'Para demolir/reconstruir',
+                    'Recuperado',
+                    'Por recuperar',
+                    'Com programa de reabilitação',
+                ].map(status => (
+                    <StatusPill
+                    key={status}
+                    active={selectedStatus.includes(status)}
+                    onClick={() => toggleStatus(status)}
+                    >
+                    {status}
+                    </StatusPill>
+                ))
+                }
+                </StatusWrapper>
             </Box>
             <Box className="imovel_types">
                 <h3>Tipos de imóvel</h3>
@@ -648,7 +712,7 @@ const StepThree = (props)=>{
                     }
                 </HouseTypeFilter>
             </Box>
-            <Box className="house_areas">
+            <InputsGrid className="house_areas">
                 <CustomInput 
                     width={50}
                     property="Area construida"
@@ -677,25 +741,36 @@ const StepThree = (props)=>{
                     placeholder="Opcional"
                     onChange={(e)=>handleChange('constructionYear')(e.target.value)}
                 />
-            </Box>
+            </InputsGrid>
             <Box className="other_traits">
-                    <h3>Outras características do teu imovel</h3>
-                    <OtherHouseTraits>
-                        {[1,2,3,3,3,3,3,3,3].map((_,index)=>
-                        <CheckBoxWithIcon  
-                            key={`${index}`}
-                            title="Ar condicionado" 
-                            description="Tem arcondicionado?" 
-                            selected={true}
-                            // onClick={() => toggleBusiness('venda')}
-                            // selected={values.businessType === 'venda'}
-                            width={20}
-                            icon={<HouseSolid/>}
-                        />)}
-                    </OtherHouseTraits>
+                    <h3>Outras características do teu imóvel</h3>
+                    <TraitsGrid>
+                        {[
+                            'Ar condicionado',
+                            'Elevador',
+                            'Garagem',
+                            'Varanda',
+                            'Piscina',
+                            'Jardim',
+                            'Segurança',
+                            'Ginásio',
+                            'Vista mar',
+                        ].map(trait => (
+                            <CheckBoxWithIcon
+                                key={trait}
+                                title={trait}
+                                description="Dá o melhor conforto ao seu cliente"
+                                selected={selectedTraits.includes(trait)}
+                                onClick={() => toggleTrait(trait)}
+                                width={100}
+                                icon={<HouseSolid />}
+                            />
+                        ))}
+                    </TraitsGrid>
+
             </Box>
             <h3>Caracteristicas fisicas do imovel</h3>
-            <Box className="house_physical_traits">
+            <InputsGrid className="house_physical_traits">
                 <CustomInput 
                     width={50}
                     property="Quartos"
@@ -724,9 +799,9 @@ const StepThree = (props)=>{
                     placeholder="Opcional"
                     onChange={(e)=>handleChange('heatingType')(e.target.value)}
                 /> */}
-            </Box>
+            </InputsGrid>
             <h3>Coordernadas geograficas</h3>
-            <Box className="house_areas">
+            <InputsGrid className="house_areas">
                 <CustomInput 
                     width={50}
                     property="Latitude"
@@ -742,9 +817,10 @@ const StepThree = (props)=>{
                     onChange={(e)=>handleChange('usableArea')(e.target.value)}
                 />
              
-            </Box>
-            <h3>Descriçao do anuncio</h3>
-            <textarea></textarea>
+            </InputsGrid>
+            <h3>Descrição do anúncio</h3>
+            <DescriptionBox placeholder="Descreva o seu imóvel..." />
+
         </StepsContainer>)
 
 }
@@ -1009,5 +1085,5 @@ const PLANS = {
       price: 10500,
       currency: 'Kz',
     },
-  ],
-};
+  ]
+}
