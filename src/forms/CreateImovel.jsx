@@ -1,12 +1,13 @@
-import React,{useState,useEffect} from "react";
+import React,{useState,useCallback,useEffect} from "react";
 import styled from 'styled-components'
 import RightRadioSelected from "@svg/right-radio-selected";
 import RightRadioNonSelected from "@svg/right-radio-non-selected";
 import './style.scss'
-import { Box, Typography } from "@mui/material";
+import { Box, Typography,Button } from "@mui/material";
 import CustomInput from "../components/custom-input";
 import CustomDropdown from "../components/custom-dropdown";
 import CheckBoxWithIcon from "../components/checkbox-with-icon/checkbox-with-icon";
+import { useDropzone } from 'react-dropzone';
 
 import Close from '@svg/close';
 import HouseSolid from "@svg/house-solid";
@@ -73,6 +74,17 @@ const StepOneContainer = styled.div`
 padding: 2em 3em;
 width: 100%;
 `;
+
+const StepTwoContainer = styled.div`
+padding: 2em 3em;
+width: 100%;
+`;
+
+const StepsContainer = styled.div`
+padding: 2em 3em;
+width: 100%;
+`;
+
 const Form = styled.form`
 margin-top: 2em;
 width: inherit;
@@ -94,19 +106,176 @@ const Split = styled.div`
     }
 `;
 
+const HouseTypeFilter = styled.div`
+        margin-left: 2em;
+        margin-right: auto;
+        margin-bottom: auto;
+        margin-top: auto;
+        flex-wrap: wrap;
+        width: 90vw;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: scroll;
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+        &>*.btn-filter{
+            padding: .9em 1em !important;
+            color: #000;
+            background-color: gray !important;
+            border: none;
+            border-radius: 1em;
+            margin-right: 1em;
+            margin-top: auto !important;
+            margin-bottom: auto !important;
+            &>*.selected{
+                background-color: #000;
+                color: #fff;
+            }
+            &:hover{
+                transition: all ease-out .4s;
+                background-color: #000;
+                // color: #fff;
+        }
+}
+`;
+
+
+// Step four styling
+
+
+const DropzoneBox = styled.div`
+  border-radius: 1em;
+  background: #f6f7f8;
+  padding: 3em;
+  text-align: center;
+  cursor: pointer;
+  border: 2px dashed #ddd;
+  transition: border-color 0.3s;
+
+  &:hover {
+    border-color: #999;
+  }
+`;
+
+const PreviewGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1em;
+  margin-top: 1.5em;
+`;
+
+const PreviewItem = styled.div`
+  position: relative;
+
+  img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 0.6em;
+  }
+
+  button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+  }
+`;
+
+ // Step five styling 
+
+
+
+const BillingToggle = styled.div`
+  display: inline-flex;
+  background: #f3f3f3;
+  border-radius: 999px;
+  padding: 0.4em;
+  margin: 2em 0;
+
+  button {
+    border: none;
+    background: transparent;
+    padding: 0.6em 1.6em;
+    border-radius: 999px;
+    font-family: gotham-medium;
+    cursor: pointer;
+    color: #555;
+
+    &.active {
+      background: white;
+      color: #000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  }
+`;
+
+const PlansGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2em;
+  margin-top: 2em;
+`;
+
+const PlanCard = styled.div`
+  background: #fff;
+  border-radius: 1.2em;
+  padding: 2em;
+  border: 3px solid
+    ${({ selected }) => (selected ? '#7B5CFF' : '#f1f1f1')};
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+`;
+
+const Price = styled.div`
+  font-size: 2rem;
+  font-family: gotham-bold;
+  margin: 1em 0;
+`;
+
+const Feature = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: 0.6em;
+  font-size: 0.85rem;
+`;
+
+
+
+
+
+
+const OtherHouseTraits = styled.div``;
 
 let steps = createImovelSteps
+
 let componentsToRender = (props)=> [
     <StepOne     {...props}/>,
     <StepTwo    {...props}/>,
     <StepThree {...props}/>,
-    <StepFour {...props}/>
+    <StepFour {...props}/>,
+    <StepFive {...props}/>
 
 ]
 steps = steps.map( (item,index)=> ({
     ...item,
     description: truncateWords(item.description, 350)
 })); //truncate words 
+
+
+const MAX_FILES = 40;
+const MAX_SIZE = 32 * 1024 * 1024; // 32MB
 
 console.log('===============step-componentsToRender---',steps)
 
@@ -255,12 +424,12 @@ const StepOne = ({values,handleChange,...props})=>{
     const [localErrors, setLocalErrors] = useState({});
 
     // Sync local state with parent's selected trait
-    useEffect(() => {
-        if (values.houseType) {
-        const trait = houseTraits.find(t => t.value === values.houseType);
-        setSelectedTrait(trait || null);
-        }
-    }, [values.houseType]);
+    // useEffect(() => {
+    //     if (values.houseType) {
+    //     const trait = houseTraits.find(t => t.value === values.houseType);
+    //     setSelectedTrait(trait || null);
+    //     }
+    // }, [values.houseType]);
 
     // Toggle business type (mutually exclusive)
     const toggleBusiness = (type) => {
@@ -413,21 +582,432 @@ const StepOne = ({values,handleChange,...props})=>{
 }
     
 const StepTwo = (props)=>{
+    return (<StepTwoContainer>
+        <StepOne {...props}/>
+        <h3>Queremos saber mais sobre você (Seus dados)</h3>
+        <CustomInput 
+                width={50}
+                property="Seu nome" 
+                name="name" 
+                placeholder="Opcional"
+                onChange={(e)=>handleChange('name')(e.target.value)}
+                />
 
+        <CustomInput 
+        width={50}
+        property="Telefone para contato" 
+        name="phone" 
+        placeholder="Opcional"
+        onChange={(e)=>handleChange('phone')(e.target.value)}
+        />
+    </StepTwoContainer>)
 }
 
 const StepThree = (props)=>{
 
+    const [selectedTraits, setSelectedTraits] = useState([]);
+
+    const toggleTrait = (trait) => {
+    setSelectedTraits(prev =>
+        prev.includes(trait)
+        ? prev.filter(t => t !== trait)
+        : [...prev, trait]
+    );
+
+    handleChange('otherTraits')(
+        selectedTraits.includes(trait)
+        ? selectedTraits.filter(t => t !== trait)
+        : [...selectedTraits, trait]
+    );
+    };
+
+
+    return(<StepsContainer>
+            <Typography variant="h5" sx={{
+                fontFamily: 'gotham-bold'
+            }}>
+                Caracteristica do imóvel
+            </Typography>
+            <Box className="house_status">
+                <h3>Estado do imovel</h3>
+                <HouseTypeFilter className="availables-house-types">
+                    {
+                        houseTraits.map((item,index)=>(
+                            <button key={index} className={`btn-filter ${index==3 && 'selected'}`}>{item.label}</button>
+                        ))
+                    }
+                </HouseTypeFilter>
+            </Box>
+            <Box className="imovel_types">
+                <h3>Tipos de imóvel</h3>
+                <HouseTypeFilter className="availables-house-types">
+                    {
+                        houseTraits.map((item,index)=>(
+                            <button key={index} className={`btn-filter ${index==3 && 'selected'}`}>{item.label}</button>
+                        ))
+                    }
+                </HouseTypeFilter>
+            </Box>
+            <Box className="house_areas">
+                <CustomInput 
+                    width={50}
+                    property="Area construida"
+                    name="built_area" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('builtArea')(e.target.value)}
+                />
+                <CustomInput 
+                    width={50}
+                    property="Area util"
+                    name="usable_area" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('usableArea')(e.target.value)}
+                />
+                <CustomInput 
+                    width={50}
+                    property="Area bruta" 
+                    name="gross_area" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('grossArea')(e.target.value)}
+                />
+                <CustomInput 
+                    width={50}
+                    property="Ano de construção" 
+                    name="construction_year" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('constructionYear')(e.target.value)}
+                />
+            </Box>
+            <Box className="other_traits">
+                    <h3>Outras características do teu imovel</h3>
+                    <OtherHouseTraits>
+                        {[1,2,3,3,3,3,3,3,3].map((_,index)=>
+                        <CheckBoxWithIcon  
+                            key={`${index}`}
+                            title="Ar condicionado" 
+                            description="Tem arcondicionado?" 
+                            selected={true}
+                            // onClick={() => toggleBusiness('venda')}
+                            // selected={values.businessType === 'venda'}
+                            width={20}
+                            icon={<HouseSolid/>}
+                        />)}
+                    </OtherHouseTraits>
+            </Box>
+            <h3>Caracteristicas fisicas do imovel</h3>
+            <Box className="house_physical_traits">
+                <CustomInput 
+                    width={50}
+                    property="Quartos"
+                    name="rooms" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('rooms')(e.target.value)}
+                />
+                <CustomInput 
+                    width={50}
+                    property="Casas de banho"
+                    name="bathrooms" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('bathrooms')(e.target.value)}
+                />
+                <CustomInput 
+                    width={50}
+                    property="Preço do imovel" 
+                    name="gross_area" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('grossArea')(e.target.value)}
+                />
+                {/* <CustomInput 
+                    width={50}
+                    property="Tipo de aquecimento" 
+                    name="heating_type" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('heatingType')(e.target.value)}
+                /> */}
+            </Box>
+            <h3>Coordernadas geograficas</h3>
+            <Box className="house_areas">
+                <CustomInput 
+                    width={50}
+                    property="Latitude"
+                    name="latitude" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('latitude')(e.target.value)}
+                />
+                <CustomInput 
+                    width={50}
+                    property="Longitude"
+                    name="longitude" 
+                    placeholder="Opcional"
+                    onChange={(e)=>handleChange('usableArea')(e.target.value)}
+                />
+             
+            </Box>
+            <h3>Descriçao do anuncio</h3>
+            <textarea></textarea>
+        </StepsContainer>)
+
 }
 
-const StepFour = (props)=>{
 
+
+function StepFour({ values, handleChange }) {
+  const [photos, setPhotos] = useState([]);
+
+  const onDrop = useCallback((acceptedFiles) => {
+    setPhotos(prev => {
+      const combined = [...prev, ...acceptedFiles];
+      return combined.slice(0, MAX_FILES);
+    });
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.heic', '.webp', '.wbmp'],
+    },
+    maxSize: MAX_SIZE,
+    multiple: true,
+  });
+
+  const removePhoto = (index) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <StepsContainer>
+      <Typography variant="h5" sx={{ fontFamily: 'gotham-bold', mb: 2 }}>
+        Editar imóvel - Multimédia
+      </Typography>
+
+      {/* ============================
+         Photos
+      ============================ */}
+
+      <Typography variant="h6">Fotos</Typography>
+      <Typography sx={{ fontSize: '.9rem', color: '#666', mb: 2 }}>
+        Aqui podes inserir as tuas primeiras fotos, escolher a foto principal,
+        arrastar para ordenar e identificar as tuas fotos
+      </Typography>
+
+      <DropzoneBox {...getRootProps()}>
+        <input {...getInputProps()} />
+        <Typography variant="h6">
+          {isDragActive ? 'Soltar fotos aqui' : 'Largar fotos aqui'}
+        </Typography>
+      </DropzoneBox>
+
+      <Typography sx={{ fontSize: '.8rem', color: '#666', mt: 1 }}>
+        {photos.length} / {MAX_FILES} fotos • até 32MB cada
+      </Typography>
+
+      {photos.length > 0 && (
+        <PreviewGrid>
+          {photos.map((file, index) => (
+            <PreviewItem key={index}>
+              <img src={URL.createObjectURL(file)} alt="preview" />
+              <button onClick={() => removePhoto(index)}>×</button>
+            </PreviewItem>
+          ))}
+        </PreviewGrid>
+      )}
+
+      <Button
+        sx={{ mt: 2, borderRadius: '1em' }}
+        variant="contained"
+        onClick={() => document.querySelector('input[type=file]').click()}
+      >
+        Adicionar foto
+      </Button>
+
+      {/* ============================
+         License
+      ============================ */}
+
+      <Box mt={4}>
+        <Typography variant="h6">
+          Licença de corrector / imobiliária
+        </Typography>
+
+        <CustomInput
+          value={values.licenseId || ''}
+          CustomInput 
+          width={50}
+          property="Adicionar o id da sua licença aqui"
+          name="licenseId" 
+          placeholder="Adicionar o id da sua licença aqui"
+          onChange={(e) => handleChange('licenseId')(e.target.value)}
+        />
+      </Box>
+
+      {/* ============================
+         Videos
+      ============================ */}
+
+      <Box mt={4}>
+        <Typography variant="h6">Vídeos</Typography>
+        <Typography sx={{ fontSize: '.9rem', color: '#666', mb: 1 }}>
+          Aqui podes introduzir os links para os vídeos carregados no Youtube
+        </Typography>
+
+        <CustomInput
+          placeholder="https://www.youtube.com/watch?v=..."
+          value={values.videoUrl || ''}
+          onChange={(e) => handleChange('videoUrl')(e.target.value)}
+        />
+      </Box>
+    </StepsContainer>
+  );
 }
 
-const StepFive = (props)=>{
 
+
+
+function StepFive({ values, handleChange }) {
+  const [billing, setBilling] = useState('anual');
+
+  const plans = PLANS[billing];
+
+  const selectPlan = (plan) => {
+    handleChange('plan')({
+      id: plan.id,
+      billing,
+      price: plan.price,
+    });
+  };
+
+  return (
+    <StepsContainer>
+      <Typography variant="h4" sx={{ fontFamily: 'gotham-bold' }}>
+        Planos para este anúncio
+      </Typography>
+
+      <Typography sx={{ mt: 1, color: '#666' }}>
+        Escolha um de nossos planos profissional
+      </Typography>
+
+      {/* Billing toggle */}
+      <BillingToggle>
+        <button
+          className={billing === 'anual' ? 'active' : ''}
+          onClick={() => setBilling('anual')}
+        >
+          Anual (30% desconto)
+        </button>
+        <button
+          className={billing === 'mensal' ? 'active' : ''}
+          onClick={() => setBilling('mensal')}
+        >
+          Mensal
+        </button>
+      </BillingToggle>
+
+      {/* Plans */}
+      <PlansGrid>
+        {plans.map(plan => (
+          <PlanCard
+            key={plan.id}
+            selected={values.plan?.id === plan.id}
+            onClick={() => selectPlan(plan)}
+          >
+            <Typography variant="h6">{plan.title}</Typography>
+
+            {plan.label && (
+              <Typography sx={{ mt: 1, fontWeight: 600 }}>
+                {plan.label}
+              </Typography>
+            )}
+
+            {plan.price > 0 && (
+              <Price>
+                {plan.price.toLocaleString()} {plan.currency}
+                <div style={{ fontSize: '0.8rem' }}>Por mês</div>
+              </Price>
+            )}
+
+            {plan.subtitle && (
+              <Typography sx={{ fontSize: '0.85rem', mt: 1 }}>
+                {plan.subtitle}
+              </Typography>
+            )}
+
+            {/* Features */}
+            <Box mt={2}>
+              {Array(5)
+                .fill(0)
+                .map((_, i) => (
+                  <Feature key={i}>
+                    ✓ Renovação automática
+                  </Feature>
+                ))}
+            </Box>
+
+            <Box
+              mt={2}
+              sx={{ display: 'flex', justifyContent: 'space-between' }}
+            >
+              <Feature>✓ Renovação automática</Feature>
+              <Feature>✓ Cancele a qualquer momento</Feature>
+            </Box>
+          </PlanCard>
+        ))}
+      </PlansGrid>
+
+      <Typography sx={{ mt: 4, fontSize: '0.85rem', color: '#777' }}>
+        Receberá um email e uma mensagem normal de validação do seu imóvel.
+        <br />
+        Favor confirmar para tornar seu imóvel público.
+      </Typography>
+    </StepsContainer>
+  );
 }
 
-const StepSix = (props)=>{
 
-}
+const PLANS = {
+  mensal: [
+    {
+      id: 'basic',
+      title: 'Basico',
+      price: 0,
+      currency: 'Kz',
+      label: 'Grátis',
+      subtitle: 'Máximo 3 anúncios',
+      highlighted: true,
+    },
+    {
+      id: 'professional',
+      title: 'Profissional',
+      price: 25000,
+      currency: 'Kz',
+    },
+    {
+      id: 'premium',
+      title: 'Premium',
+      price: 15000,
+      currency: 'Kz',
+    },
+  ],
+  anual: [
+    {
+      id: 'basic',
+      title: 'Basico',
+      price: 0,
+      currency: 'Kz',
+      label: 'Grátis',
+      subtitle: 'Máximo 3 anúncios',
+      highlighted: true,
+    },
+    {
+      id: 'professional',
+      title: 'Profissional',
+      price: 17500, // 30% desconto
+      currency: 'Kz',
+    },
+    {
+      id: 'premium',
+      title: 'Premium',
+      price: 10500,
+      currency: 'Kz',
+    },
+  ],
+};
