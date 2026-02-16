@@ -20,6 +20,7 @@ const MAX_HISTORY = 20;
 const initialState = {
 
     createImovelDraft: {
+    step: 0,
     // Step 1
     houseType: null,
     houseTraitType: null,
@@ -29,14 +30,24 @@ const initialState = {
     street: '',
     houseNumber: '',
     zipCode: '',
+    location: { lat: null, lng: null },
 
     // Step 2+
     name: '',
     phone: '',
+    contactPreference: 'phone,email,sms',
 
     // Step 3
     houseStatus: [],
     otherTraits: [],
+    // area:null,
+    area: {
+      built: '',
+      usable: '',
+      gross: '',
+    },
+    price: '',
+    description:'',
 
     // Step 4+
     media: {
@@ -134,6 +145,9 @@ const ACTIONS = {
   SET_SUGGESTIONS: 'SET_SUGGESTIONS',
   SET_MAP_INSTANCE: 'SET_MAP_INSTANCE',
   SET_MODAL: 'SET_MODAL',
+  //new ones
+  SET_CREATE_IMOVEL_FIELD: 'SET_CREATE_IMOVEL_FIELD',
+  SET_CREATE_IMOVEL_STEP: 'SET_CREATE_IMOVEL_STEP',
   
   UPDATE_TRAFFIC_DATA: 'UPDATE_TRAFFIC_DATA',
   UPDATE_SEARCH_DETAILS: 'UPDATE_SEARCH_DETAILS',
@@ -190,15 +204,32 @@ const reducer = (state, { type, payload }) => {
       };
       //update create imovel draft 
 
-      case ACTIONS.UPDATE_CREATE_IMOVEL:
-      return {
-        ...state,
-        createImovelDraft: {
-          ...state.createImovelDraft,
-          ...payload,
-        },
-      };
+      case ACTIONS.SET_CREATE_IMOVEL_FIELD:
+        return {
+          ...state,
+          createImovelDraft: {
+            ...state.createImovelDraft,
+            [payload.field]: payload.value,
+          },
+        };
 
+      case ACTIONS.SET_CREATE_IMOVEL_STEP:
+        return {
+          ...state,
+          createImovelDraft: {
+            ...state.createImovelDraft,
+            step: payload,
+          },
+        };
+
+      case ACTIONS.UPDATE_CREATE_IMOVEL:
+        return {
+          ...state,
+          createImovelDraft: {
+            ...state.createImovelDraft,
+            ...payload,
+          },
+        };
 
     case ACTIONS.UPDATE_TRAFFIC_DATA:
       return {
@@ -425,4 +456,14 @@ export const toggleModal = modalName => ({
 export const updateCreateImovel = payload => ({
   type: ACTIONS.UPDATE_CREATE_IMOVEL,
   payload,
+});
+
+export const setCreateImovelField = (field, value) => ({
+  type: ACTIONS.SET_CREATE_IMOVEL_FIELD,
+  payload: { field, value },
+});
+
+export const setCreateImovelStep = step => ({
+  type: ACTIONS.SET_CREATE_IMOVEL_STEP,
+  payload: step,
 });
