@@ -318,27 +318,86 @@ export default function LoginForm() {
 
         if (!res.ok) throw new Error('Falha ao obter informações do Google');
 
-        const userInfo = await res.json();
+        const googleUser = await res.json();
 
-        setFormValues((prev) => ({
-          ...prev,
-          email: userInfo.email || '',
-          googleId: userInfo.id || '',
-          password: '', // clear password field
-        }));
+        console.log('Google user info:', googleUser);
 
-        // Trigger login right after
-        await handleLogin();
+        // Call login mutation directly with Google credentials
+        // No form validation needed - backend handles everything
+        const { data } = await loginMutation({
+          variables: {
+            email: googleUser.email,
+            password: undefined,
+            googleId: googleUser.id,
+          },
+        });
+
+        console.log('Google login response:', data);
+
+        // Process the authentication response
+        const result = data?.login;
+
+        if (!result) {
+          throw new Error('Resposta inválida do servidor');
+        }
+
+        // Show errors if any
+        if (result.errors?.length > 0) {
+          toast.error(result.errors.join(' • '));
+          console.error('Login errors:', result.errors);
+          return;
+        }
+
+        // Check if login was successful
+        if (!result.success) {
+          // Backend may indicate no account found or other issues
+          const errorMsg = result.message || 'Falha na autenticação com Google';
+          toast.error(errorMsg);
+          console.error('Login failed:', errorMsg);
+          return;
+        }
+
+        // Success: User is authenticated
+        if (result.token && result.user) {
+          localStorage.setItem('authToken', result.token);
+
+          dispatch({
+            type: 'SET_SESSION',
+            payload: { 
+              isLoggedIn: true, 
+              user: {
+                ...result.user,
+                photoUrl: googleUser.picture, // Use Google profile picture
+              }
+            },
+          });
+
+          // Close the modal
+          dispatch({
+            type: 'TOGGLE_MODAL',
+            payload: { modalName: 'login' },
+          });
+
+          toast.success(result.message || 'Bem-vindo!');
+          navigate('/');
+          return;
+        }
+
+        // No token returned - something went wrong
+        toast.error('Não foi possível autenticar com Google');
       } catch (err) {
-        console.error('Google login failed:', err);
-        toast.error('Não foi possível autenticar com Google. Tente novamente.');
+        console.error('Google login error:', err);
+        const errorMsg = err.graphQLErrors?.[0]?.message || 
+                         err.message || 
+                         'Não foi possível autenticar com Google. Tente novamente.';
+        toast.error(errorMsg);
       }
     },
     onError: (error) => {
       console.error('Google login error:', error);
-      toast.error('Falha na autenticação com Google');
+      toast.error('Falha na autenticação com Google. Tente novamente.');
     },
-    flow: 'implicit', // or 'auth-code' depending on your setup
+    flow: 'implicit',
   });
 
   return (

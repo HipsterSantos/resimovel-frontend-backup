@@ -36,7 +36,7 @@ const MultipleField = styled.div`
 `;
 
 const SIGNUP_MUTATION = gql`
-  mutation Signup($userInput: UserInput!) {
+  mutation signup($userInput: UserInput!) {
     signup(userInput: $userInput) {
       success
       message
@@ -47,6 +47,8 @@ const SIGNUP_MUTATION = gql`
         email
         phone
         verifiedEmail
+        photoUrl
+        authWith
       }
       errors
       dev {
@@ -70,6 +72,7 @@ export default function SignupForm(props) {
     street: '',
     fullAddress: '',
     password: '',
+    notifyMeThrough: [],
   });
 
   const [errors, setErrors] = React.useState({
@@ -126,7 +129,8 @@ export default function SignupForm(props) {
 
     try {
       setErrors((prev) => ({ ...prev, general: '' }));
-
+      console.log('Signup input:', form);
+      debugger
       const { data } = await signupMutation({
         variables: {
           userInput: {
@@ -136,12 +140,13 @@ export default function SignupForm(props) {
             phone: form.phone.trim() || undefined,
             street: form.street.trim() || undefined,
             fullAddress: form.fullAddress.trim() || undefined,
+            notifyMeThrough: form.notifyMeThrough.length > 0 ? form.notifyMeThrough : ['email'],
           },
         },
       });
 
       const res = data?.signup;
-
+      debugger
       if (!res?.success) {
         const errorText =
           res?.errors?.length > 0
@@ -214,19 +219,26 @@ export default function SignupForm(props) {
 
         const googleUser = await response.json();
 
-        // Prepare payload for backend
+        // Prepare payload for backend - only include fields that have values
         const userInput = {
           name: googleUser.name || googleUser.given_name || 'Usuário Google',
           email: googleUser.email,
           googleId: googleUser.id,
-          phone: undefined,
-          street: undefined,
-          fullAddress: undefined,
+          notifyMeThrough: ['email'],
         };
+
+        // Add Google profile picture if available
+        if (googleUser.picture) {
+          userInput.photoUrl = googleUser.picture;
+        }
+
+        console.log('Google userInput being sent:', userInput);
 
         const { data } = await signupMutation({
           variables: { userInput },
         });
+
+        console.log('Signup response:', data);
 
         const res = data?.signup;
 
@@ -256,7 +268,14 @@ export default function SignupForm(props) {
           toast.info('Verifique seu email para completar o cadastro');
         }
       } catch (err) {
-        console.error('Google signup error:', err);
+        console.log('error -- ',err)
+        debugger
+        console.error('Google signup detailed error:', {
+          message: err.message,
+          graphQLErrors: err.graphQLErrors,
+          networkError: err.networkError,
+          fullError: err,
+        });
         toast.error('Não foi possível cadastrar com Google. Tente novamente.');
       }
     },
@@ -276,6 +295,23 @@ export default function SignupForm(props) {
     if (errors[prop]) {
       setErrors((prev) => ({ ...prev, [prop]: '' }));
     }
+  };
+
+  const handleNotificationChange = (option) => {
+    setForm((prev) => {
+      const updated = [...prev.notifyMeThrough];
+      if (updated.includes(option)) {
+        return {
+          ...prev,
+          notifyMeThrough: updated.filter((item) => item !== option),
+        };
+      } else {
+        return {
+          ...prev,
+          notifyMeThrough: [...updated, option],
+        };
+      }
+    });
   };
 
   return (
@@ -379,6 +415,32 @@ export default function SignupForm(props) {
           helperText={errors.password}
         />
 
+        <NotificationPreferences>
+          <Typography sx={{ fontSize: '.85rem', fontFamily: 'gotham-medium', marginBottom: '.5em' }}>
+            Como deseja ser notificado?
+          </Typography>
+          <CheckboxContainer>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.notifyMeThrough.includes('email')}
+                onChange={() => handleNotificationChange('email')}
+              />
+              <span>Email</span>
+            </label>
+            {form.phone && (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.notifyMeThrough.includes('both')}
+                  onChange={() => handleNotificationChange('both')}
+                />
+                <span>Email e SMS</span>
+              </label>
+            )}
+          </CheckboxContainer>
+        </NotificationPreferences>
+
         {errors.general && (
           <Typography color="error" sx={{ textAlign: 'center', mt: 1 }}>
             {errors.general}
@@ -448,5 +510,41 @@ const LogoAndText = styled.div`
     margin-top: auto;
     margin-bottom: auto;
     margin-left: 0.8em;
+  }
+`;
+
+const NotificationPreferences = styled.div`
+  margin: 1.5em 0 1em 0;
+  padding: 1em;
+  background: #f7f8fa;
+  border-radius: 0.5em;
+`;
+
+const CheckboxContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+
+  label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-family: gotham-light;
+    font-size: 0.9rem;
+
+    input[type='checkbox'] {
+      margin-right: 0.8em;
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+    }
+
+    span {
+      color: #404040;
+    }
+
+    &:hover span {
+      color: #d9f070;
+    }
   }
 `;
