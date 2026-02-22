@@ -431,7 +431,15 @@ export default function GoogleMapDropdown({
           title={apiError ? `API Error: ${apiError}` : 'Search for a location'}
         />
 
-        <Icon>{rightIcon || <ChevronIcon />}</Icon>
+        <Icon onClick={() => {
+          setSearch('');
+          setSuggestions([]);
+          setOpenPaper(false);
+          dispatch({type: 'UPDATE_SEARCH_INPUT', payload: ''});
+          onSelect?.({ target: { value: null } });
+        }} style={{ cursor: 'pointer' }}>
+          {rightIcon || <ChevronIcon />}
+        </Icon>
       </ModerInput>
 
       {(error || apiError) && (

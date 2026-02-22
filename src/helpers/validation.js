@@ -4,6 +4,14 @@
  */
 
 export const ValidationRules = {
+    phoneDigitsOnly: (value, fieldName = 'Telefone') => {
+      if (!value) return null;
+      const cleaned = value.replace(/[^0-9+]/g, '');
+      if (cleaned !== value) {
+        return `${fieldName} deve conter apenas dígitos e '+'`;
+      }
+      return null;
+    },
   // Text validations
   required: (value, fieldName) => {
     if (!value || value.toString().trim() === '') {
@@ -111,7 +119,8 @@ export const validateField = (value, rules = [], fieldName = 'Campo') => {
  * {
  *   name: {
  *     rules: [ValidationRules.required, ValidationRules.minLength(2)],
- *     label: 'Nome'
+ *     label: 'Nome',
+ *     optional: true  // If set to true, only validate if value is provided
  *   },
  *   email: {
  *     rules: [ValidationRules.required, ValidationRules.email],
@@ -123,8 +132,14 @@ export const validateForm = (formData, validationSchema) => {
   const errors = {};
 
   for (const [fieldName, config] of Object.entries(validationSchema)) {
-    const { rules = [], label = fieldName } = config;
+    const { rules = [], label = fieldName, optional = false } = config;
     const value = formData[fieldName];
+
+    // For optional fields, only validate if there's a value (skip validation if empty)
+    if (optional && (!value || value.toString().trim() === '')) {
+      continue;
+    }
+
     const error = validateField(value, rules, label);
 
     if (error) {

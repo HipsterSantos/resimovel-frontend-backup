@@ -396,13 +396,12 @@ export default function CreateImovelForm(props){
           rules: [ValidationRules.required],
           label: 'Localização do Imóvel',
         },
-        // Optional fields for contact info
         name: {
-          rules: [],
+          rules: [ValidationRules.required, ValidationRules.minLength(3)],
           label: 'Seu Nome',
         },
         phone: {
-          rules: [],
+          rules: [ValidationRules.required, ValidationRules.phoneDigitsOnly, ValidationRules.maxLength(13)],
           label: 'Telefone para Contato',
         },
       },
@@ -413,6 +412,7 @@ export default function CreateImovelForm(props){
         videoUrl: {
           rules: [ValidationRules.url],
           label: 'URL do Vídeo',
+          optional: true,
         },
       },
       4: { // Step 5 - Plans (no validation needed)
@@ -604,7 +604,7 @@ const StepOne = ({values, handleChange, errors = {},...props})=>{
             (
                 <CheckBoxWithIcon  
                     title="Arrendamento" 
-                    description="Vivenda, Apartamentos,Terreno..." 
+                    description="Quartos para arrendar" 
                     selected={values.businessType === 'arrendamento'}
                     onClick={() => toggleBusiness('arrendamento')}
                     width={80}

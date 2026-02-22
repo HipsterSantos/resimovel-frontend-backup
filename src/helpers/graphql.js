@@ -2,8 +2,8 @@
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
 const client = new ApolloClient({
-  uri: 'http://localhost:8989/graphql', // Correct property and port
-  // uri: 'https://frontend-production-app-6341f842cf9b.herokuapp.com/graphql', // Correct property and port
+  // uri: 'http://localhost:8989/graphql', // Correct property and port
+  uri: 'https://frontend-production-app-6341f842cf9b.herokuapp.com/graphql', // Correct property and port
   cache: new InMemoryCache(),
 });
 
