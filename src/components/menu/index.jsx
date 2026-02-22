@@ -16,7 +16,8 @@ import Avatar from '../../../public/svg/circle-avatar';
 
 import Close from '../../../public/svg/close';
 import { MenuIcon } from '../../../public/svg/menu-icon';
-import { logout, useStore } from '../../contexts/states.store.context';
+import { useStore } from '../../contexts/states.store.context';
+import { toast } from 'react-toastify';
 import PasswordRecoverForm from '../../forms/Password.recover';
 import { useNavigate } from 'react-router-dom';
 
@@ -160,7 +161,9 @@ export default function MenuComponent(){
     const [divsToOpen,setDivsToOpen] = React.useState(
         Array(menuData.landingPage.filter(menuItem=>menuItem.type=='text' && menuItem.submenus).length).fill(false)
     );
-    const [isLogged, setIsLogged] = useState(!!state.session.isLoggedIn)
+    const isLogged = !!state.session.isLoggedIn;
+    const user = state.session.user || null;
+    const userPhoto = user?.photo || user?.photoUrl || user?.picture || null;
 
     let [showLoginDropdown, setShowLoginDropdown ] = useState(false)
 
@@ -184,8 +187,15 @@ export default function MenuComponent(){
     }
     
     const handleLogout = () => {
-        dispatch(logout());
-        dispatch(toggleModal('login', false)); // just in case
+        // clear token and update store
+        try {
+            localStorage.removeItem('authToken');
+        } catch (e) {}
+        dispatch({ type: 'LOGOUT' });
+        // close any open modals
+        dispatch({ type: 'SET_MODAL', payload: {
+            login: { open: false }, signup: { open: false }, onBoarding: { open: false }, passwordRecover: { open: false }, createImovel: { open: false }, searchingOnMap: { open: false }
+        }});
         toast.info('Sessão terminada');
         navigate('/');
     };
@@ -327,8 +337,12 @@ export default function MenuComponent(){
                         onClick={()=>handleOpen(menu.name)}
                         className={menu.class}
                         id={menu.allowAvatar && isLogged?'avatar-dropdown':'avatar-login-dropdown'}>
-                            {menu.allowAvatar && isLogged && <Avatar/>}
-                            <span>{menu.allowAvatar && isLogged?'Hipster':menu.title}</span>
+                            {menu.allowAvatar && isLogged && (userPhoto ? (
+                                <img src={userPhoto} alt={user.name || 'avatar'} style={{width:24,height:24,borderRadius:'50%'}}/>
+                            ) : (
+                                <Avatar/>
+                            ))}
+                            <span>{menu.allowAvatar && isLogged ? (user?.name || menu.title) : menu.title}</span>
                         </CustomButton>
                         {isLogged && (
                             <DropdownPaper
@@ -346,7 +360,13 @@ export default function MenuComponent(){
                             {
 
                                 menu.submenus?.map((submenu,subindex)=>(
-                                    <MenuItem key={subindex} onClick={e=>handleClose(e,subindex)}>
+                                    <MenuItem key={subindex} onClick={e=>{
+                                        if(submenu.action && submenu.action === 'logout'){
+                                            handleLogout();
+                                            return;
+                                        }
+                                        handleClose(e,subindex)
+                                    }}>
                                         {submenu.title}
                                     </MenuItem>
                                 ))

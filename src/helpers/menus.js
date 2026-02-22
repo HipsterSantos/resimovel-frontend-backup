@@ -133,7 +133,8 @@ export const menus = {
                     alt: '',
                     icon:'',
                     redirectTo:'',
-                    class: 'logout-session close-session'
+                    class: 'logout-session close-session',
+                    action: 'logout'
                 },
             ],
             checkSession: ()=>{},

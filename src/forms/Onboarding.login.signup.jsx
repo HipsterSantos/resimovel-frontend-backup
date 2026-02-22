@@ -71,13 +71,13 @@ margin-bottom: 1em;
 
 
 const LOGIN_MUTATION = gql`
-  mutation Login($email: String!, $password: String!, $googleId: String) {
+  mutation Login($email: String!, $password: String, $googleId: String) {
     login(email: $email, password: $password, googleId: $googleId) {
       user {
         id
         name
         email
-        photo
+        photoUrl
       }
       token
       message
@@ -92,7 +92,7 @@ const SIGNUP_MUTATION = gql`
         id
         name
         email
-        photo
+        photoUrl
       }
       token
       message
@@ -142,10 +142,11 @@ export default function OnBoardingForm(props) {
     });
   };
 
-  const handleGoogleAuth = () =>useGoogleLogin({
+  // Create the googleLogin handler once and use it on click (don't call at render)
+  const googleLogin = useGoogleLogin({
     onSuccess: onGoogleSuccess,
-    onError: onGoogleError
-  })
+    onError: onGoogleError,
+  });
 
 
   useEffect(()=>{
@@ -178,45 +179,55 @@ export default function OnBoardingForm(props) {
     try {
       const mutation = login ? loginMutation : signupMutation;
       const variables = login
-        ? { 
-          googleId: googleProfile.id,
-          email: googleProfile.email, 
-          password: 'google_oauth'
-         }
-        : 
-        {
+        ? {
+            googleId: googleProfile.id,
+            email: googleProfile.email,
+            password: undefined,
+          }
+        : {
             userInput: {
               googleId: googleProfile.id,
               name: googleProfile.name,
               email: googleProfile.email,
-              password: 'google_oauth',
+              password: undefined,
             },
-        };
+          };
 
       const { data } = await mutation({ variables });
 
-      const token = data[login ? 'login' : 'signup'].token;
-      const user = data[login ? 'login' : 'signup'].user;
+      const payloadKey = login ? 'login' : 'signup';
+      const token = data[payloadKey].token;
+      const user = data[payloadKey].user;
       if (token) {
-        // Store token in localStorage
-        localStorage.setItem('authToken', token);
-        dispatch({ type: 'SET_SESSION', payload: { isLoggedIn: true, user } });
+        // Normalize photo field
+        const normalizedUser = {
+          ...user,
+          photo: user?.photo || user?.photoUrl || user?.picture || null,
+        };
+
+        // Dispatch to store both token and user (setSession helper saves both)
         dispatch({
-          type: 'TOGGLE_MODAL',
-          payload: { modalName: null }, // Close all modals
+          type: 'SET_SESSION',
+          payload: { token, user: normalizedUser },
         });
-        setLoggedUser(user);
-        toast.success(`${data[login ? 'login' : 'signup'].message}`, {
-          position: "top-right",
-          autoClose: 5000, // 5 seconds
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
+
+        // Close all modals
+        dispatch({
+          type: 'SET_MODAL',
+          payload: {
+            login: { open: false },
+            signup: { open: false },
+            onBoarding: { open: false },
+            passwordRecover: { open: false },
+            createImovel: { open: false },
+            searchingOnMap: { open: false },
+          },
         });
-        // Close the modal
-        dispatch({ type: 'closeModal' });
+
+        toast.success(`${data[payloadKey].message}`, {
+          position: 'top-right',
+          autoClose: 5000,
+        });
       }
     } catch (error) {
       console.log('Error in Google Authentication:', error);
@@ -254,8 +265,8 @@ export default function OnBoardingForm(props) {
         <button className={signup && 'selected'} onClick={()=>{handleLoginSignupChange()}}> Criar conta</button>
         <button className={login && 'selected'} onClick={()=>{handleLoginSignupChange()}}>Login</button>
       </ActionButtons>
-      <LogoAndContent className='login-with-google'
-          onClick={handleGoogleAuth()}
+        <LogoAndContent className='login-with-google'
+          onClick={googleLogin}
           >
           <GoogeLogo/>
           <span>{login? label[1]: label[0]} com google</span>

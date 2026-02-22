@@ -25,6 +25,8 @@ const LOGIN_MUTATION = gql`
         email
         phone
         verifiedEmail
+        photoUrl
+        authWith
       }
       errors
     }
@@ -43,6 +45,8 @@ const VERIFY_OTP_MUTATION = gql`
         email
         phone
         verifiedEmail
+        photoUrl
+        authWith
       }
       errors
     }
@@ -242,14 +246,29 @@ export default function LoginForm() {
 
       const userData = result.user || { email: formValues.email };
 
-      dispatch({
-        type: 'SET_SESSION',
-        payload: { isLoggedIn: true, user: userData },
-      });
+      // normalize photo field
+      const normalizedUser = {
+        ...userData,
+        photo: userData.photo || userData.photoUrl || userData.picture || null,
+      };
 
       dispatch({
-        type: 'TOGGLE_MODAL',
-        payload: { modalName: 'login' },
+        type: 'SET_SESSION',
+        payload: { token: result.token, user: normalizedUser },
+      });
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+
+      // close modals explicitly
+      dispatch({
+        type: 'SET_MODAL',
+        payload: {
+          login: { open: false },
+          signup: { open: false },
+          onBoarding: { open: false },
+          passwordRecover: { open: false },
+          createImovel: { open: false },
+          searchingOnMap: { open: false },
+        },
       });
 
       toast.success(result.message || 'Bem-vindo!');
@@ -361,21 +380,28 @@ export default function LoginForm() {
         if (result.token && result.user) {
           localStorage.setItem('authToken', result.token);
 
+          const normalizedUser = {
+            ...result.user,
+            photo: result.user.photo || result.user.photoUrl || googleUser.picture || null,
+          };
+
           dispatch({
             type: 'SET_SESSION',
-            payload: { 
-              isLoggedIn: true, 
-              user: {
-                ...result.user,
-                photoUrl: googleUser.picture, // Use Google profile picture
-              }
-            },
+            payload: { token: result.token, user: normalizedUser },
           });
+          localStorage.setItem('authUser', JSON.stringify(normalizedUser));
 
-          // Close the modal
+          // Close the modal explicitly
           dispatch({
-            type: 'TOGGLE_MODAL',
-            payload: { modalName: 'login' },
+            type: 'SET_MODAL',
+            payload: {
+              login: { open: false },
+              signup: { open: false },
+              onBoarding: { open: false },
+              passwordRecover: { open: false },
+              createImovel: { open: false },
+              searchingOnMap: { open: false },
+            },
           });
 
           toast.success(result.message || 'Bem-vindo!');

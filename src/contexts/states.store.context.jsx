@@ -337,13 +337,20 @@ export default function StoreProvider({ children }) {
   const { isLoaded, loadError, mapInstance } = useContext(GoogleMapsContext); // ✅ SAFE
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  /* Restore session */
+  /* Restore session on app boot */
   useEffect(() => {
     const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('authUser');
     if (token) {
+      let user = null;
+      try {
+        user = userStr ? JSON.parse(userStr) : null;
+      } catch (e) {
+        console.error('Failed to parse stored user:', e);
+      }
       dispatch({
         type: ACTIONS.SET_SESSION,
-        payload: { token, user: null },
+        payload: { token, user },
       });
     }
   }, []);
@@ -419,11 +426,15 @@ export const setHouses = payload => ({
 
 export const setSession = payload => {
   localStorage.setItem('authToken', payload.token);
+  if (payload.user) {
+    localStorage.setItem('authUser', JSON.stringify(payload.user));
+  }
   return { type: ACTIONS.SET_SESSION, payload };
 };
 
 export const logout = () => {
   localStorage.removeItem('authToken');
+  localStorage.removeItem('authUser');
   return { type: ACTIONS.LOGOUT };
 };
 

@@ -163,13 +163,27 @@ export default function SignupForm(props) {
       // If token returned → auto-login
       if (res.token) {
         localStorage.setItem('authToken', res.token);
+        const normalizedUser = {
+          ...res.user,
+          photo: res.user?.photo || res.user?.photoUrl || res.user?.picture || null,
+        };
+
         dispatch({
           type: 'SET_SESSION',
-          payload: { isLoggedIn: true, user: res.user },
+          payload: { token: res.token, user: normalizedUser },
         });
+        localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+
         dispatch({
-          type: 'TOGGLE_MODAL',
-          payload: { modalName: 'signup' },
+          type: 'SET_MODAL',
+          payload: {
+            login: { open: false },
+            signup: { open: false },
+            onBoarding: { open: false },
+            passwordRecover: { open: false },
+            createImovel: { open: false },
+            searchingOnMap: { open: false },
+          },
         });
         navigate('/');
       } else {
@@ -255,13 +269,27 @@ export default function SignupForm(props) {
 
         if (res.token) {
           localStorage.setItem('authToken', res.token);
+          const normalizedUser = {
+            ...res.user,
+            photo: res.user?.photo || res.user?.photoUrl || res.user?.picture || null,
+          };
+
           dispatch({
             type: 'SET_SESSION',
-            payload: { isLoggedIn: true, user: res.user },
+            payload: { token: res.token, user: normalizedUser },
           });
+          localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+
           dispatch({
-            type: 'TOGGLE_MODAL',
-            payload: { modalName: 'signup' },
+            type: 'SET_MODAL',
+            payload: {
+              login: { open: false },
+              signup: { open: false },
+              onBoarding: { open: false },
+              passwordRecover: { open: false },
+              createImovel: { open: false },
+              searchingOnMap: { open: false },
+            },
           });
           navigate('/');
         } else {
