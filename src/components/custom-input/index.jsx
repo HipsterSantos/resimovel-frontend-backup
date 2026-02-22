@@ -8,12 +8,15 @@ const ModerInputContainer = styled.div`
   margin-bottom: 1em;
   width: ${(props)=>props.width+'%'??'100%'};
 `;
+
 const ModerInput  = styled.div`
   display: flex;
   height: 6.5vh;
-  background: #F7F8FA;
+  background: ${(props) => props.hasError ? '#FFF5F5' : '#F7F8FA'};
   padding: 0 0.8em;
   border-radius: 0.4em;
+  border: ${(props) => props.hasError ? '1px solid #FF6B6B' : 'none'};
+  transition: all 0.2s ease;
 `;
 
 const Input = styled.input`
@@ -24,7 +27,12 @@ const Input = styled.input`
     margin-left: .7em;
     height: inherit;
     border: none;
+    
+    &::placeholder {
+      color: #A7A7AF;
+    }
 `;
+
 const Icon = styled.span`
   margin-left: auto;
   margin-top: ${props=>props.pt?props.pt:'auto'};
@@ -38,11 +46,21 @@ const FieldName = styled.p`
   margin-bottom: 0.8em;
   font-size: 0.8rem;
   text-indent: 0.4em;
+  font-family: gotham-medium;
+  color: ${(props) => props.hasError ? '#FF6B6B' : 'inherit'};
 `;
 
+const ErrorMessage = styled.p`
+  margin-top: 0.4em;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  color: #FF6B6B;
+  text-indent: 0.4em;
+  font-family: gotham-light;
+`;
 
 export default function CustomInput({
-  showTitle=true,
+  showTitle = true,
   property,
   onChange = () => {},
   value,
@@ -52,8 +70,11 @@ export default function CustomInput({
   type,
   placeholder,
   width,
+  error = false,
+  helperText = '',
+  required = false,
   ...props
-  }){
+}){
     
     const handleChange = (event) => {
       onChange(event); // Pass the entire event to the parent
@@ -62,15 +83,24 @@ export default function CustomInput({
     const handleClean = () => {
       onChange({ target: { value: '' } }); // Simulate an event to clear the input
     };
+
+    const displayLabel = label || property;
     
   return (
         <ModerInputContainer 
             className={`modern-input-${property}`}
             width={props.width}
             >
-          {showTitle && !label && <FieldName className='field-name'>{property}</FieldName>}
-          {showTitle && label && <FieldName className='field-name'>{label}</FieldName>}
-          <ModerInput className='container-input-logo'>
+          {showTitle && (
+            <FieldName 
+              className='field-name'
+              hasError={error}
+            >
+              {displayLabel}
+              {required && <span style={{ color: '#FF6B6B' }}>*</span>}
+            </FieldName>
+          )}
+          <ModerInput className='container-input-logo' hasError={error}>
               { 
               leftIcon &&
                 <Icon scale=".9" pt=".9em">{leftIcon}</Icon>
@@ -85,6 +115,9 @@ export default function CustomInput({
                {!rightIcon?<CloseIcon onClick={handleClean}/>:(<>{rightIcon}</>)}
               </Icon>
           </ModerInput>
+          {error && helperText && (
+            <ErrorMessage>{helperText}</ErrorMessage>
+          )}
         </ModerInputContainer>
     )
 }

@@ -18,9 +18,11 @@ const ModerInputContainer = styled.div`
 const ModerInput = styled.div`
   display: flex;
   height: 6.5vh;
-  background: #f7f8fa;
+  background: ${(props) => props.hasError ? '#FFF5F5' : '#f7f8fa'};
   padding: 0 0.8em;
   border-radius: 0.4em;
+  border: ${(props) => props.hasError ? '1px solid #FF6B6B' : 'none'};
+  transition: all 0.2s ease;
 `;
 
 const Input = styled.input`
@@ -30,6 +32,11 @@ const Input = styled.input`
   background: transparent;
   height: inherit;
   border: none;
+  padding: 0 0.4em;
+  
+  &::placeholder {
+    color: #a7a7af;
+  }
 `;
 
 const Icon = styled.span`
@@ -46,20 +53,67 @@ const FieldName = styled.p`
   font-size: 0.8rem;
   text-indent: 0.4em;
   font-family: gotham-medium;
+  color: ${(props) => props.hasError ? '#FF6B6B' : 'inherit'};
+`;
+
+const ErrorMessage = styled.p`
+  margin-top: 0.4em;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  color: #FF6B6B;
+  text-indent: 0.4em;
+  font-family: gotham-light;
+`;
+
+const SuggestionItem = styled(Typography)`
+  padding: 1em 1.2em !important;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: #f7f8fa;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
 const Paper = styled.div`
   width: 100%;
   display: block;
   position: absolute;
-  top: ${(props) => props.positionTop ?? 0};
-  box-shadow: 1px 23px 30px rgba(0, 0, 0, 0.3);
+  top: ${(props) => props.positionTop ?? '100%'};
+  left: 0;
+  right: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
   overflow-x: hidden;
   border-radius: 0.7em;
-  max-height: 30vh;
+  max-height: 40vh;
   line-height: 1.6;
-  z-index: 800;
+  z-index: 1000;
   background: white;
+  border: 1px solid #e0e0e0;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+    
+    &:hover {
+      background: #555;
+    }
+  }
 `;
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY;
@@ -76,6 +130,10 @@ export default function GoogleMapDropdown({
   rightIcon,
   type,
   placeholder,
+  error = false,
+  helperText = '',
+  required = false,
+  value = '',
 }) {
   const { state, dispatch } = useStore();
   const { isLoaded, loadError } = useContext(GoogleMapsContext);
@@ -234,15 +292,20 @@ export default function GoogleMapDropdown({
 
   return (
     <ModerInputContainer width={width}>
-      {showTitle && <FieldName>{property}</FieldName>}
+      {showTitle && (
+        <FieldName hasError={error}>
+          {property}
+          {required && <span style={{ color: '#FF6B6B' }}>*</span>}
+        </FieldName>
+      )}
 
-      <ModerInput>
+      <ModerInput hasError={error}>
         <Icon>{leftIcon}</Icon>
 
         <Input
           type={type}
           placeholder={placeholder}
-          value={search || state.searchBarFilter.searchInput || ''}
+          value={search || state.searchBarFilter?.searchInput || value || ''}
           onChange={handleInputChange}
           disabled={!isLoaded || !!loadError}
         />
@@ -250,16 +313,27 @@ export default function GoogleMapDropdown({
         <Icon>{rightIcon || <ChevronIcon />}</Icon>
       </ModerInput>
 
+      {error && helperText && (
+        <ErrorMessage>{helperText}</ErrorMessage>
+      )}
+
       {openPaper && (
-        <Paper positionTop={positionTop}>
-          {suggestions.map((s, i) => (
-            <Typography
-              key={i}
-              onClick={() => handleSelectSuggestion(s)}
-            >
-              {s.description}
-            </Typography>
-          ))}
+        <Paper positionTop={positionTop || 'calc(100% + 0.5em)'}>
+          {suggestions.length > 0 ? (
+            suggestions.map((s, i) => (
+              <SuggestionItem
+                key={i}
+                onClick={() => handleSelectSuggestion(s)}
+                variant="body2"
+              >
+                {s.description}
+              </SuggestionItem>
+            ))
+          ) : (
+            <SuggestionItem variant="body2" sx={{ textAlign: 'center', color: '#999' }}>
+              Nenhuma sugestão encontrada
+            </SuggestionItem>
+          )}
         </Paper>
       )}
     </ModerInputContainer>

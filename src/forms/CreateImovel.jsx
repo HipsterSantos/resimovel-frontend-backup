@@ -16,6 +16,13 @@ import MapMarkerSolid from "@svg/map-marker-new";
 import { houseTraits, typeOfBusiness,truncateWords, createImovelSteps} from "../helpers/index";
 import GoogleMapDropdown from "../components/google-map-dropdown ";
 import { setCreateImovelStep, updateCreateImovel, useStore } from '../contexts/states.store.context';
+import { 
+  validateField, 
+  validateForm, 
+  isFormValid, 
+  ValidationRules,
+  CommonValidationSchemas 
+} from '../helpers/validation';
 
 
 
@@ -346,20 +353,94 @@ export default function CreateImovelForm(props){
     const { state, dispatch } = useStore();
     const formValues = state.createImovelDraft;
     const activeStep = formValues.step;
+    const [errors, setErrors] = useState({});
 
     const handleChange = (field) => (value) => {
         dispatch(updateCreateImovel({ [field]: value }));
+        // Clear error for this field when user starts typing
+        if (errors[field]) {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[field];
+            return newErrors;
+          });
+        }
+    };
+
+    // Validation schemas for each step
+    const stepValidationSchemas = {
+      0: { // Step 1 - Basic info
+        houseType: {
+          rules: [ValidationRules.required],
+          label: 'Tipo de Imóvel',
+        },
+        businessType: {
+          rules: [ValidationRules.required],
+          label: 'Tipo de Negócio',
+        },
+        fullAddress: {
+          rules: [ValidationRules.required],
+          label: 'Localização do Imóvel',
+        },
+      },
+      1: { // Step 2 - About you (reloads step 1 + adds name/phone)
+        houseType: {
+          rules: [ValidationRules.required],
+          label: 'Tipo de Imóvel',
+        },
+        businessType: {
+          rules: [ValidationRules.required],
+          label: 'Tipo de Negócio',
+        },
+        fullAddress: {
+          rules: [ValidationRules.required],
+          label: 'Localização do Imóvel',
+        },
+        // Optional fields for contact info
+        name: {
+          rules: [],
+          label: 'Seu Nome',
+        },
+        phone: {
+          rules: [],
+          label: 'Telefone para Contato',
+        },
+      },
+      2: { // Step 3 - Property details (mostly optional)
+        // Optional field validation
+      },
+      3: { // Step 4 - Media (optional)
+        videoUrl: {
+          rules: [ValidationRules.url],
+          label: 'URL do Vídeo',
+        },
+      },
+      4: { // Step 5 - Plans (no validation needed)
+      },
+    };
+
+    const validateCurrentStep = () => {
+      const schema = stepValidationSchemas[activeStep];
+      if (!schema) return true;
+
+      const stepErrors = validateForm(formValues, schema);
+      setErrors(stepErrors);
+      return isFormValid(stepErrors);
     };
 
     const handleNext = () => {
-        if(formValues.step < steps.length - 1){
+        if (validateCurrentStep()) {
+          if (formValues.step < steps.length - 1) {
             dispatch(setCreateImovelStep(formValues.step + 1));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }
     };
 
     const handleBack = () => {
         if (formValues.step > 0) {
             dispatch(setCreateImovelStep(formValues.step - 1));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
@@ -389,7 +470,7 @@ export default function CreateImovelForm(props){
             <CenterSide className="center-side">
                 {
                     <div key={`step-${activeStep}-inner-component`}>
-                        {componentsToRender({values: formValues,handleChange,})[activeStep]}
+                        {componentsToRender({values: formValues, handleChange, errors})[activeStep]}
                     </div>
                 }
                 <Box className="action-buttons">
@@ -435,9 +516,7 @@ export default function CreateImovelForm(props){
 
 
 
-const StepOne = ({values,handleChange,...props})=>{
-
-    const [localErrors, setLocalErrors] = useState({});
+const StepOne = ({values, handleChange, errors = {},...props})=>{
 
     const selectedHouseType = values.houseType;
 
@@ -470,8 +549,9 @@ const StepOne = ({values,handleChange,...props})=>{
             onSelect={(item) => handleChange('houseType')(item)}
             debugger
             placeholder="Casas e apartamento"
-            error={!!localErrors.houseType}
-            helperText={localErrors.houseType}
+            error={!!errors.houseType}
+            helperText={errors.houseType}
+            required={true}
         />
         {
             traitsConfig?.values?.length> 0 && 
@@ -533,8 +613,11 @@ const StepOne = ({values,handleChange,...props})=>{
 
             )
         }
-
-         
+        {errors.businessType && (
+          <Typography sx={{ fontSize: '0.75rem', color: '#FF6B6B', textIndent: '0.4em' }}>
+            {errors.businessType}
+          </Typography>
+        )}
 
         <Typography 
         sx={{
@@ -546,20 +629,23 @@ const StepOne = ({values,handleChange,...props})=>{
         <GoogleMapDropdown
             leftIcon={<MapMarkerSolid/>}
             rightIcon={<Close/>}
-            value=""
+            value={values.fullAddress || ''}
             type="text"
             positionTop={10}
             showTitle={false}
             autoComplete={true}
             width={80}
-            property="Bairro" 
-            name="full_address" 
+            property="Bairro"
             placeholder="Palanca ( Kilamba Kiaxi)"
+            error={!!errors.fullAddress}
+            helperText={errors.fullAddress}
+            required={true}
+            name="full_address" 
             onSelect={(place) => {
-                handleChange('fullAddress')(place.description);
+                handleChange('fullAddress')(place.description || place.target.value?.description);
                 handleChange('location')({
-                lat: place.geometry?.location?.lat(),
-                lng: place.geometry?.location?.lng(),
+                lat: place.geometry?.location?.lat?.() || place.geometry?.location?.lat,
+                lng: place.geometry?.location?.lng?.() || place.geometry?.location?.lng,
                 });
           }}
         />
@@ -568,6 +654,7 @@ const StepOne = ({values,handleChange,...props})=>{
             property="Rua" 
             name="street" 
             placeholder="Colocar o nome ou número da rua"
+            value={values.street || ''}
             onChange={(e)=>handleChange('street')(e.target.value)}
             />
         <Split>
@@ -577,6 +664,7 @@ const StepOne = ({values,handleChange,...props})=>{
                 property="Numero da casa" 
                 name="house_number" 
                 placeholder="2..."
+                value={values.houseNumber || ''}
                 onChange={(e)=>handleChange('houseNumber')(e.target.value)}
                 />
             <CustomInput 
@@ -584,6 +672,7 @@ const StepOne = ({values,handleChange,...props})=>{
                 property="Códico postal" 
                 name="zip_code" 
                 placeholder="Opcional"
+                value={values.zipCode || ''}
                 onChange={(e)=>handleChange('zipCode')(e.target.value)}
                 />
         </Split>
@@ -594,38 +683,71 @@ const StepOne = ({values,handleChange,...props})=>{
     </StepOneContainer>)
 }
     
-const StepTwo = ({values,handleChange})=>{
+const StepTwo = ({values, handleChange, errors = {}})=>{
     return (<StepTwoContainer>
-        <StepOne values={values} handleChange={handleChange}/>
+        {/* Reload Step 1 fields */}
+        <StepOne values={values} handleChange={handleChange} errors={errors}/>
         
+        {/* Additional fields for Step 2 */}
+        <Typography variant="h5" sx={{
+            fontFamily: 'gotham-bold',
+            marginTop: '2em'
+        }}>
+            Confirmação de contacto
+        </Typography>
+
         {values.fullAddress && (
-            <div>
-                <h4>Confirmação de localização</h4>
-                <p>{values.fullAddress}</p>
-            </div>
+            <Box sx={{
+                backgroundColor: '#f7f8fa',
+                padding: '1em',
+                borderRadius: '0.8em',
+                marginTop: '1em',
+                marginBottom: '1em'
+            }}>
+                <Typography variant="body2" sx={{ fontFamily: 'gotham-medium', color: '#333' }}>
+                    Localização confirmada:
+                </Typography>
+                <Typography sx={{ fontSize: '.9rem', color: '#666', marginTop: '0.5em' }}>
+                    {values.fullAddress}
+                </Typography>
+            </Box>
         )}
 
-        <h3>Queremos saber mais sobre você (Seus dados)</h3>
+        <Typography 
+            sx={{
+                fontFamily: 'gotham-medium',
+                marginTop: '2em',
+                marginBottom: '1em'
+            }}
+        >
+            Queremos saber mais sobre você (Seus dados)
+        </Typography>
+
         <CustomInput 
-            width={50}
+            width={80}
             property="Seu nome" 
             name="name" 
-            placeholder="Opcional"
+            placeholder="Digite seu nome completo"
             value={values.name || ''}
             onChange={(e)=>handleChange('name')(e.target.value)}
+            error={!!errors.name}
+            helperText={errors.name}
         />
 
         <CustomInput 
-        width={50}
-        property="Telefone para contato" 
-        name="phone" 
-        placeholder="Opcional"
-        onChange={(e)=>handleChange('phone')(e.target.value)}
+            width={80}
+            property="Telefone para contato" 
+            name="phone" 
+            placeholder="Ex: 923456789 ou +244923456789"
+            value={values.phone || ''}
+            onChange={(e)=>handleChange('phone')(e.target.value)}
+            error={!!errors.phone}
+            helperText={errors.phone}
         />
     </StepTwoContainer>)
 }
 
-const StepThree = ({values,handleChange})=>{
+const StepThree = ({values, handleChange, errors = {}})=>{
   const houseStatus = values.houseStatus || [];
   const otherTraits = values.otherTraits || [];
 
@@ -694,27 +816,38 @@ const StepThree = ({values,handleChange})=>{
                     placeholder="Opcional"
                     value={values.builtArea || ''}
                     onChange={(e)=>handleChange('builtArea')(e.target.value)}
+                    error={!!errors.builtArea}
+                    helperText={errors.builtArea}
                 />
                 <CustomInput 
                     width={50}
                     property="Area util"
                     name="usable_area" 
                     placeholder="Opcional"
+                    value={values.usableArea || ''}
                     onChange={(e)=>handleChange('usableArea')(e.target.value)}
+                    error={!!errors.usableArea}
+                    helperText={errors.usableArea}
                 />
                 <CustomInput 
                     width={50}
                     property="Area bruta" 
                     name="gross_area" 
                     placeholder="Opcional"
+                    value={values.grossArea || ''}
                     onChange={(e)=>handleChange('grossArea')(e.target.value)}
+                    error={!!errors.grossArea}
+                    helperText={errors.grossArea}
                 />
                 <CustomInput 
                     width={50}
                     property="Ano de construção" 
                     name="construction_year" 
                     placeholder="Opcional"
+                    value={values.constructionYear || ''}
                     onChange={(e)=>handleChange('constructionYear')(e.target.value)}
+                    error={!!errors.constructionYear}
+                    helperText={errors.constructionYear}
                 />
             </InputsGrid>
             <Box className="other_traits">
@@ -751,29 +884,31 @@ const StepThree = ({values,handleChange})=>{
                     property="Quartos"
                     name="rooms" 
                     placeholder="Opcional"
+                    value={values.rooms || ''}
                     onChange={(e)=>handleChange('rooms')(e.target.value)}
+                    error={!!errors.rooms}
+                    helperText={errors.rooms}
                 />
                 <CustomInput 
                     width={50}
                     property="Casas de banho"
                     name="bathrooms" 
                     placeholder="Opcional"
+                    value={values.bathrooms || ''}
                     onChange={(e)=>handleChange('bathrooms')(e.target.value)}
+                    error={!!errors.bathrooms}
+                    helperText={errors.bathrooms}
                 />
                 <CustomInput 
                     width={50}
                     property="Preço do imovel" 
                     name="price" 
                     placeholder="Opcional"
+                    value={values.price || ''}
                     onChange={(e)=>handleChange('price')(e.target.value)}
+                    error={!!errors.price}
+                    helperText={errors.price}
                 />
-                {/* <CustomInput 
-                    width={50}
-                    property="Tipo de aquecimento" 
-                    name="heating_type" 
-                    placeholder="Opcional"
-                    onChange={(e)=>handleChange('heatingType')(e.target.value)}
-                /> */}
             </InputsGrid>
             <h3>Coordernadas geograficas</h3>
             <InputsGrid className="house_areas">
@@ -782,6 +917,7 @@ const StepThree = ({values,handleChange})=>{
                     property="Latitude"
                     name="latitude" 
                     placeholder="Opcional"
+                    value={values.latitude || ''}
                     onChange={(e)=>handleChange('latitude')(e.target.value)}
                 />
                 <CustomInput 
@@ -789,6 +925,7 @@ const StepThree = ({values,handleChange})=>{
                     property="Longitude"
                     name="longitude" 
                     placeholder="Opcional"
+                    value={values.longitude || ''}
                     onChange={(e)=>handleChange('longitude')(e.target.value)}
                 />
              
@@ -806,7 +943,7 @@ const StepThree = ({values,handleChange})=>{
 
 
 
-function StepFour({ values, handleChange }) {
+function StepFour({ values, handleChange, errors = {} }) {
   const [photos, setPhotos] = useState([]);
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -886,8 +1023,7 @@ function StepFour({ values, handleChange }) {
 
         <CustomInput
           value={values.licenseId || ''}
-          CustomInput 
-          width={50}
+          width={80}
           property="Adicionar o id da sua licença aqui"
           name="licenseId" 
           placeholder="Adicionar o id da sua licença aqui"
@@ -906,9 +1042,13 @@ function StepFour({ values, handleChange }) {
         </Typography>
 
         <CustomInput
+          width={80}
           placeholder="https://www.youtube.com/watch?v=..."
+          property="URL do vídeo"
           value={values.videoUrl || ''}
           onChange={(e) => handleChange('videoUrl')(e.target.value)}
+          error={!!errors.videoUrl}
+          helperText={errors.videoUrl}
         />
       </Box>
     </StepsContainer>
@@ -918,7 +1058,7 @@ function StepFour({ values, handleChange }) {
 
 
 
-function StepFive({ values, handleChange }) {
+function StepFive({ values, handleChange, errors = {} }) {
   const [billing, setBilling] = useState('anual');
 
   const plans = PLANS[billing];
