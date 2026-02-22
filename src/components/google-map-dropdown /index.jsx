@@ -84,7 +84,7 @@ const Paper = styled.div`
   width: 100%;
   display: block;
   position: absolute;
-  top: ${(props) => props.positionTop ?? '100%'};
+  top: ${(props) => props.positionTop ?? '4'} em;
   left: 0;
   right: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
@@ -116,8 +116,6 @@ const Paper = styled.div`
   }
 `;
 
-const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY;
-
 const logger = new Logger('GoogleMapDropdown.jsx');
 
 export default function GoogleMapDropdown({
@@ -141,9 +139,30 @@ export default function GoogleMapDropdown({
   const [search, setSearch] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [openPaper, setOpenPaper] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   const autoCompleteService = useRef(null);
   const placesService = useRef(null);
+  const sessionToken = useRef(null);
+
+  // Log component mount and API key status
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY;
+    const keyStatus = apiKey 
+      ? `✅ Key loaded (${apiKey.substring(0, 10)}...)` 
+      : '❌ Key NOT found';
+    
+    logger.info('GoogleMapDropdown Mounted', {
+      hasApiKey: !!apiKey,
+      contextIsLoaded: isLoaded,
+      contextLoadError: loadError,
+      message: keyStatus
+    });
+
+    return () => {
+      logger.debug('GoogleMapDropdown Unmounted');
+    };
+  }, [isLoaded, loadError]);
 
   /* ============================
      MAPS + PLACES BOOTSTRAP
@@ -153,45 +172,65 @@ export default function GoogleMapDropdown({
     logger.info('Maps context state', { isLoaded, loadError });
 
     if (loadError) {
-      logger.error('Google Maps loadError', loadError);
+      const errorMsg = `Google Maps Load Error: ${loadError.message || JSON.stringify(loadError)}`;
+      logger.error('Google Maps loadError', { error: loadError, message: errorMsg });
+      setApiError(errorMsg);
       return;
     }
 
     if (!isLoaded) {
       logger.debug('⏳ Waiting for Google Maps script...');
+      setApiError(null);
       return;
     }
 
-    if (!window.google) {
-      logger.error('❌ window.google is missing');
+    // Check all required APIs
+    const checks = {
+      'window.google': !!window.google,
+      'window.google.maps': !!window.google?.maps,
+      'window.google.maps.places': !!window.google?.maps?.places,
+      'AutocompleteService': !!window.google?.maps?.places?.AutocompleteService,
+      'PlacesService': !!window.google?.maps?.places?.PlacesService,
+    };
+
+    const allChecksPass = Object.values(checks).every(v => v);
+
+    logger.debug('API availability checks', checks);
+
+    if (!allChecksPass) {
+      Object.entries(checks).forEach(([name, available]) => {
+        if (!available) {
+          logger.error(`❌ ${name} is missing`);
+        }
+      });
+      setApiError('Google Maps Places API not fully loaded');
       return;
     }
 
-    if (!window.google.maps) {
-      logger.error('❌ window.google.maps is missing');
-      return;
-    }
-
-    if (!window.google.maps.places) {
-      logger.error(
-        '❌ Places library missing — check libraries:["places"]'
-      );
-      return;
-    }
-
-    logger.info('✅ Google Maps + Places available');
+    logger.info('✅ Google Maps + Places fully available');
 
     if (!autoCompleteService.current) {
-      autoCompleteService.current =
-        new window.google.maps.places.AutocompleteService();
+      try {
+        autoCompleteService.current =
+          new window.google.maps.places.AutocompleteService();
 
-      placesService.current =
-        new window.google.maps.places.PlacesService(
-          document.createElement('div')
-        );
+        placesService.current =
+          new window.google.maps.places.PlacesService(
+            document.createElement('div')
+          );
 
-      logger.success?.('✅ Places services initialized')
-        ?? logger.info('Places services initialized');
+        // Generate session token for better performance
+        if (window.google.maps.places.AutocompleteSessionToken) {
+          sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
+          logger.debug('✅ Session token created for Places API');
+        }
+
+        logger.success('✅ Places services initialized');
+        setApiError(null);
+      } catch (err) {
+        logger.error('Failed to initialize Places services', { error: err.message, stack: err.stack });
+        setApiError(`Initialization failed: ${err.message}`);
+      }
     }
   }, [isLoaded, loadError]);
 
@@ -208,7 +247,7 @@ export default function GoogleMapDropdown({
       payload: value,
     });
 
-    logger.debug('User input', value);
+    logger.debug('User input', { input: value, length: value.length });
 
     if (!value.trim()) {
       setSuggestions([]);
@@ -218,40 +257,101 @@ export default function GoogleMapDropdown({
     }
 
     if (!autoCompleteService.current) {
-      logger.error('❌ AutocompleteService not initialized');
+      const errorMsg = 'AutocompleteService not initialized - Google Maps may not have loaded properly';
+      logger.error(errorMsg, {
+        serviceExists: !!autoCompleteService.current,
+        isLoaded,
+        loadError,
+        apiError
+      });
+      setApiError(errorMsg);
       return;
     }
 
+    // Build request with session token
     const request = {
       input: value,
       types: ['geocode'],
       componentRestrictions: { country: 'AO' },
+      sessionToken: sessionToken.current,
     };
 
-    logger.debug('Autocomplete request payload', request);
+    logger.debug('Autocomplete request', request);
 
-    autoCompleteService.current.getPlacePredictions(
-      request,
-      (predictions, status) => {
-        logger.debug('Autocomplete response', {
-          status,
-          predictionsCount: predictions?.length,
-        });
-
-        if (status === 'OK' && predictions?.length) {
-          setSuggestions(predictions);
-          setOpenPaper(true);
-        } else {
-          setSuggestions([]);
-          setOpenPaper(false);
-
-          logger.error('Autocomplete failed', {
+    try {
+      autoCompleteService.current.getPlacePredictions(
+        request,
+        (predictions, status) => {
+          // Get human-readable status name
+          const statusName = window.google?.maps?.places?.PlacesServiceStatus?.[status] || 'UNKNOWN_STATUS';
+          
+          logger.debug('Autocomplete callback received', {
             status,
-            meaning: window.google.maps.places.PlacesServiceStatus[status],
+            statusName,
+            predictionsCount: predictions?.length || 0,
           });
+
+          // Check different status codes
+          if (status === 'OK' && predictions && predictions.length > 0) {
+            logger.debug('✅ Predictions received successfully', { 
+              count: predictions.length,
+              firstPrediction: predictions[0]?.description
+            });
+            setSuggestions(predictions);
+            setOpenPaper(true);
+            setApiError(null);
+          } else if (status === 'ZERO_RESULTS') {
+            logger.debug('No results found for input', { input: value });
+            setSuggestions([]);
+            // Keep paper open to show "Nenhuma sugestão encontrada"
+            setOpenPaper(true);
+            setApiError(null);
+          } else {
+            // Map status codes to human-readable messages
+            const statusMessages = {
+              'INVALID_REQUEST': 'Invalid search request - please check your input',
+              'NOT_OK': 'API request failed',
+              'OVER_QUERY_LIMIT': 'Too many requests - please try again in a moment',
+              'REQUEST_DENIED': 'API Key error - please contact support',
+              'UNKNOWN_ERROR': 'An unexpected error occurred',
+            };
+
+            const errorMsg = statusMessages[status] || `API Error (${status})`;
+            
+            logger.error('❌ Autocomplete failed', {
+              status,
+              statusName,
+              message: errorMsg,
+              request: {
+                ...request,
+                sessionToken: sessionToken.current ? 'present' : 'missing'
+              }
+            });
+            
+            setSuggestions([]);
+            setOpenPaper(false);
+            setApiError(`Search failed: ${errorMsg}`);
+
+            // If request was denied, it might be an API key issue
+            if (status === 'REQUEST_DENIED') {
+              logger.critical('API Key Issue Detected', {
+                apiKey: import.meta.env.VITE_GOOGLE_MAP_API_KEY ? 'present' : 'missing',
+                message: 'Please ensure the Google Maps API key is valid and has Places API enabled'
+              });
+            }
+          }
         }
-      }
-    );
+      );
+    } catch (err) {
+      logger.error('🚨 Exception in getPlacePredictions', {
+        error: err.message,
+        stack: err.stack,
+        name: err.name,
+      });
+      setSuggestions([]);
+      setOpenPaper(false);
+      setApiError(`Error: ${err.message}`);
+    }
   };
 
   /* ============================
@@ -259,7 +359,7 @@ export default function GoogleMapDropdown({
   ============================ */
 
   const handleSelectSuggestion = (suggestion) => {
-    logger.info('Suggestion selected', suggestion);
+    logger.info('Suggestion selected', { description: suggestion.description, placeId: suggestion.place_id });
 
     setSearch(suggestion.description);
     setOpenPaper(false);
@@ -271,16 +371,36 @@ export default function GoogleMapDropdown({
 
     onSelect?.({ target: { value: suggestion } });
 
+    if (!placesService.current) {
+      logger.warn('PlacesService not available for place details');
+      return;
+    }
+
     placesService.current?.getDetails(
-      { placeId: suggestion.place_id },
+      { 
+        placeId: suggestion.place_id,
+        sessionToken: sessionToken.current,
+        fields: ['geometry', 'formatted_address', 'name', 'place_id']
+      },
       (result, status) => {
-        logger.debug('Place details response', { status, result });
+        logger.debug('Place details response', { 
+          status,
+          hasGeometry: !!result?.geometry,
+          address: result?.formatted_address
+        });
 
         if (status === 'OK') {
           dispatch({
             type: 'UPDATE_SEARCH_DETAILS',
             payload: result,
           });
+          
+          // Generate new session token after first request
+          if (window.google?.maps?.places?.AutocompleteSessionToken) {
+            sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
+          }
+        } else {
+          logger.warn('Place details request failed', { status });
         }
       }
     );
@@ -293,13 +413,13 @@ export default function GoogleMapDropdown({
   return (
     <ModerInputContainer width={width}>
       {showTitle && (
-        <FieldName hasError={error}>
+        <FieldName hasError={error || !!apiError}>
           {property}
           {required && <span style={{ color: '#FF6B6B' }}>*</span>}
         </FieldName>
       )}
 
-      <ModerInput hasError={error}>
+      <ModerInput hasError={error || !!apiError}>
         <Icon>{leftIcon}</Icon>
 
         <Input
@@ -307,18 +427,19 @@ export default function GoogleMapDropdown({
           placeholder={placeholder}
           value={search || state.searchBarFilter?.searchInput || value || ''}
           onChange={handleInputChange}
-          disabled={!isLoaded || !!loadError}
+          disabled={!isLoaded || !!loadError || !!apiError}
+          title={apiError ? `API Error: ${apiError}` : 'Search for a location'}
         />
 
         <Icon>{rightIcon || <ChevronIcon />}</Icon>
       </ModerInput>
 
-      {error && helperText && (
-        <ErrorMessage>{helperText}</ErrorMessage>
+      {(error || apiError) && (
+        <ErrorMessage>{error ? helperText : apiError}</ErrorMessage>
       )}
 
-      {openPaper && (
-        <Paper positionTop={positionTop || 'calc(100% + 0.5em)'}>
+      {openPaper && !apiError && (
+        <Paper positionTop={positionTop ||'4em'}>
           {suggestions.length > 0 ? (
             suggestions.map((s, i) => (
               <SuggestionItem
@@ -330,11 +451,22 @@ export default function GoogleMapDropdown({
               </SuggestionItem>
             ))
           ) : (
-            <SuggestionItem variant="body2" sx={{ textAlign: 'center', color: '#999' }}>
+            <SuggestionItem variant="body2" sx={{ textAlign: 'center', color: '#999', cursor: 'default' }}>
               Nenhuma sugestão encontrada
             </SuggestionItem>
           )}
         </Paper>
+      )}
+
+      {apiError && (
+        <Typography sx={{ 
+          fontSize: '0.75rem', 
+          color: '#FF6B6B', 
+          textIndent: '0.4em',
+          marginTop: '0.4em'
+        }}>
+          ⚠️ {apiError}
+        </Typography>
       )}
     </ModerInputContainer>
   );

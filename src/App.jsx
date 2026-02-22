@@ -11,6 +11,7 @@ import GoogleMapProvider from './contexts/google.map.context';
 import { ApolloProvider } from '@apollo/client';
 import Client from './helpers/graphql';
 import { Logger } from './helpers/logging';
+import './helpers/google-maps-diagnostics'; // Load diagnostics utility
 
 const MenuComponent = React.lazy(() => import('./components/menu'));
 const FooterSection = React.lazy(() => import('./pages/footer'));

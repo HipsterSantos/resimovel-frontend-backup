@@ -41,19 +41,46 @@ export const GoogleMapsContext = createContext({
 export default function GoogleMapProvider({ children }) {
   const loadStartRef = useRef(performance.now());
 
+  const apiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY;
+
+  // Log API key status on component mount
+  useEffect(() => {
+    const keyStatus = apiKey 
+      ? `✅ API Key loaded (${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 5)})` 
+      : '❌ API Key NOT found in environment';
+    
+    logger.info('Google Maps API Key Status', { 
+      hasKey: !!apiKey,
+      keyLength: apiKey?.length || 0,
+      message: keyStatus,
+      env: import.meta.env.MODE
+    });
+
+    if (!apiKey) {
+      logger.critical('CRITICAL: Google Maps API Key is missing!', {
+        expectedEnvVar: 'VITE_GOOGLE_MAP_API_KEY',
+        currentValue: apiKey,
+        message: 'Please check your .env file has VITE_GOOGLE_MAP_API_KEY=your_api_key'
+      });
+    }
+  }, [apiKey]);
+
   const loaderOptions = useMemo(
     () => ({
       id: 'script-loader',
-      googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_API_KEY,
+      googleMapsApiKey: apiKey,
       libraries,
       version: 'weekly',
       region: 'AO',   // 🇦🇴 Bias map tiles
       language: 'pt', // Portuguese labels
     }),
-    []
+    [apiKey]
   );
 
-  logger.debug('Initializing Google Maps loader', loaderOptions);
+  logger.debug('Initializing Google Maps loader', {
+    ...loaderOptions,
+    googleMapsApiKey: loaderOptions.googleMapsApiKey ? 'present' : 'MISSING'
+  });
 
   const { isLoaded, loadError } = useJsApiLoader(loaderOptions);
   const [mapInstance, setMapInstance] = useState(null);
@@ -85,9 +112,28 @@ export default function GoogleMapProvider({ children }) {
 
     if (window.google?.maps?.places) {
       logger.debug('🧠 Places API available');
+      
+      // Test Places services
+      try {
+        const testService = new window.google.maps.places.AutocompleteService();
+        const testPlaces = new window.google.maps.places.PlacesService(document.createElement('div'));
+        logger.success('✅ Both AutocompleteService and PlacesService can be instantiated', {
+          hasAutocomplete: !!testService,
+          hasPlaces: !!testPlaces,
+        });
+      } catch (err) {
+        logger.error('⚠️ Error initializing test services', { error: err.message });
+      }
     } else {
-      logger.warn('⚠️ Places API not available yet');
+      logger.error('❌ Places API not available - check that libraries: ["places"] is in useJsApiLoader config');
     }
+
+    // Log window.google structure
+    logger.debug('window.google structure:', {
+      hasGoogle: !!window.google,
+      hasMaps: !!window.google?.maps,
+      hasPlaces: !!window.google?.maps?.places,
+    });
   }, [isLoaded]);
 
   /* ----------------------------------

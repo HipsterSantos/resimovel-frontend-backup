@@ -27,34 +27,48 @@ export class Logger {
     return "unknown";
   }
 
-  log(level, message) {
+  log(level, message, data = null) {
     const timestamp = new Date().toISOString();
     const color = COLORS[level.toUpperCase()] || COLORS.INFO;
     const callerInfo = this.getCallerInfo();
 
     console.group(`[${timestamp}] [${this.name}] [${level.toUpperCase()}] [${callerInfo}]`);
     console.log(`${color}${message}${COLORS.RESET}`);
+    
+    // Log additional data if provided
+    if (data !== null && data !== undefined) {
+      if (typeof data === 'object') {
+        console.table(data);
+      } else {
+        console.log(data);
+      }
+    }
+    
     console.groupEnd();
   }
 
-  info(message) {
-    this.log("INFO", message);
+  info(message, data = null) {
+    this.log("INFO", message, data);
   }
 
-  debug(message) {
-    this.log("DEBUG", message);
+  debug(message, data = null) {
+    this.log("DEBUG", message, data);
   }
 
-  warning(message) {
-    this.log("WARNING", message);
+  warning(message, data = null) {
+    this.log("WARNING", message, data);
   }
 
-  error(message) {
-    this.log("ERROR", message);
+  error(message, data = null) {
+    this.log("ERROR", message, data);
   }
 
-  critical(message) {
-    this.log("CRITICAL", message);
+  critical(message, data = null) {
+    this.log("CRITICAL", message, data);
+  }
+
+  success(message, data = null) {
+    this.log("INFO", "✅ " + message, data);
   }
 
   monitorErrors() {
