@@ -29,7 +29,7 @@ const Overlay = styled.div`
 `;
 
 
-export default function HeroSection (){
+export default function HeroSection (props){
  return (
  <HeroContainer>
     <Overlay className='overlay-container'>
@@ -53,11 +53,11 @@ export default function HeroSection (){
                 topologia ou tipo e por preço
                 </Typography>
             </Box>
-            <SearchBarComponent/>
+            {props.removeBar ? null : <SearchBarComponent/>}
         </Box>
         <Box className="ads-content-box">
             <div className='card-ads'>
-                <HeroAds/>
+                {props.removeAds ? null : <HeroAds/>}
             </div>
         </Box>
     </Overlay>

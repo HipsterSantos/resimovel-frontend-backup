@@ -64,9 +64,12 @@ export const ValidationRules = {
     return null;
   },
 
-  number: (value, fieldName) => {
-    if (value && isNaN(Number(value))) {
-      return `${fieldName} deve ser um número válido`;
+  zipCode: (value, fieldName) => {
+    if (!value) return null;
+    // Accept 0000, 000000, 0000-00
+    const cleaned = value.replace(/-/g, '');
+    if (!/^\d{4}$/.test(cleaned) && !/^\d{6}$/.test(cleaned)) {
+      return `${fieldName} deve ter 4 ou 6 dígitos (ex: 0000 ou 0000-00)`;
     }
     return null;
   },

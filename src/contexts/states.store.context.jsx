@@ -20,44 +20,46 @@ const MAX_HISTORY = 20;
 const initialState = {
 
     createImovelDraft: {
-    step: 0,
-    // Step 1
-    houseType: null,
-    houseTraitType: null,
-    businessType: 'venda',
+      step: 0,
+      // Step 1
+      houseType: null,
+      houseTraitType: null,
+      businessType: 'venda',
 
-    fullAddress: '',
-    street: '',
-    houseNumber: '',
-    zipCode: '',
-    location: { lat: null, lng: null },
+      fullAddress: '',
+      street: '',
+      houseNumber: '',
+      zipCode: '',
+      location: { lat: null, lng: null },
 
-    // Step 2+
-    name: '',
-    phone: '',
-    contactPreference: 'phone,email,sms',
+      // Step 2+
+      name: '',
+      phone: '',
+      contactPreference: 'phone,email,sms',
 
-    // Step 3
-    houseStatus: [],
-    otherTraits: [],
-    // area:null,
-    area: {
-      built: '',
-      usable: '',
-      gross: '',
-    },
-    price: '',
-    description:'',
+      // Step 3
+      houseStatus: [],
+      otherTraits: [],
+      // area:null,
+      area: {
+        built: '',
+        usable: '',
+        gross: '',
+      },
+      price: '',
+      description:'',
 
-    // Step 4+
-    media: {
+      // Step 4+
       photos: [],
       videos: [],
-      licenseId: '',
-    },
+      media: {
+        photos: [],
+        videos: [],
+        licenseId: '',
+      },
 
-    // Step 5
-    plan: null,
+      // Step 5
+      plan: null,
   },
 
   session: {

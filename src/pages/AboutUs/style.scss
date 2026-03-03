@@ -1,0 +1,10 @@
+.main-about-us{
+    display: flex;
+    padding: 2em;
+    &.left-side{
+        flex: 50%;
+    }   line-height: 2;
+    &.right-side{
+        flex: 50%;
+    }
+}

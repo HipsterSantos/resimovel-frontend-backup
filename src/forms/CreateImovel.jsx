@@ -1,5 +1,6 @@
 import React,{useState,useCallback,useEffect} from "react";
 import styled from 'styled-components'
+import { gql, useMutation } from '@apollo/client';
 import RightRadioSelected from "@svg/right-radio-selected";
 import RightRadioNonSelected from "@svg/right-radio-non-selected";
 import './style.scss'
@@ -16,6 +17,7 @@ import MapMarkerSolid from "@svg/map-marker-new";
 import { houseTraits, typeOfBusiness,truncateWords, createImovelSteps} from "../helpers/index";
 import GoogleMapDropdown from "../components/google-map-dropdown ";
 import { setCreateImovelStep, updateCreateImovel, useStore } from '../contexts/states.store.context';
+import Logger from "../helpers/logging";
 import { 
   validateField, 
   validateForm, 
@@ -334,6 +336,7 @@ let componentsToRender = (props)=> [
     <StepFive {...props}/>
 
 ]
+
 steps = steps.map( (item,index)=> ({
     ...item,
     description: truncateWords(item.description, 350)
@@ -343,10 +346,21 @@ steps = steps.map( (item,index)=> ({
 const MAX_FILES = 40;
 const MAX_SIZE = 32 * 1024 * 1024; // 32MB
 
+const PUBLISH_HOUSE_MUTATION = gql`
+  mutation PublishHouse($housePayload: HouseInput!) {
+    publishHouse(housePayload: $housePayload) {
+      id
+      title
+      photos
+      videoUrl
+      licenseId
+    }
+  }
+`;
+
+const log = new Logger('CreateImovelForm');
+
 console.log('===============step-componentsToRender---',steps)
-
-
-
 
 export default function CreateImovelForm(props){
     
@@ -354,6 +368,11 @@ export default function CreateImovelForm(props){
     const formValues = state.createImovelDraft;
     const activeStep = formValues.step;
     const [errors, setErrors] = useState({});
+    const [submitError, setSubmitError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [publishHouse] = useMutation(PUBLISH_HOUSE_MUTATION);
+
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8989';
 
     const handleChange = (field) => (value) => {
         dispatch(updateCreateImovel({ [field]: value }));
@@ -366,6 +385,142 @@ export default function CreateImovelForm(props){
           });
         }
     };
+
+    const uploadSinglePhoto = useCallback(async (file) => {
+      log.info('Uploading photo', {
+        name: file?.name,
+        sizeBytes: file?.size,
+        type: file?.type,
+      });
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await fetch(`${apiBaseUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        throw new Error(errorPayload.error || 'Falha no upload da foto');
+      }
+
+      const payload = await response.json();
+      if (!payload?.url) {
+        throw new Error('Resposta inválida no upload da foto');
+      }
+      log.success('Photo uploaded', {
+        name: file?.name,
+        url: payload.url,
+      });
+      return payload.url;
+    }, [apiBaseUrl]);
+
+    const uploadPhotos = useCallback(async (photos = []) => {
+      const filePhotos = photos.filter((photo) => photo instanceof File);
+      if (!filePhotos.length) {
+        log.info('No local photos to upload in step 5');
+        return [];
+      }
+
+      log.info('Uploading photos batch', {
+        totalFiles: filePhotos.length,
+      });
+
+      const uploaded = [];
+      for (const file of filePhotos) {
+        const url = await uploadSinglePhoto(file);
+        uploaded.push(url);
+      }
+      log.success('Photos batch uploaded', {
+        uploadedCount: uploaded.length,
+      });
+      return uploaded;
+    }, [uploadSinglePhoto]);
+
+    const buildHousePayload = useCallback((values, uploadedPhotoUrls = []) => {
+      const normalizedType =
+        values.type ||
+        values.houseType?.label ||
+        values.houseType?.value ||
+        values.houseType ||
+        'Imóvel';
+
+      const existingPhotoUrls = (values.photos || []).filter((photo) => typeof photo === 'string');
+      const photos = [...existingPhotoUrls, ...uploadedPhotoUrls];
+
+      return {
+        type: normalizedType,
+        houseType: normalizedType,
+        serviceType: values.businessType === 'venda' ? 'Venda' : 'Aluguel',
+        businessType: values.businessType || 'venda',
+        title: values.title || `${normalizedType} em ${values.fullAddress || 'Angola'}`,
+        price: values.price ? Number(values.price) : 0,
+        description: values.description || '',
+        fullAddress: values.fullAddress || '',
+        status: values.houseStatus || [],
+        houseStatus: values.houseStatus || [],
+        otherTraits: values.otherTraits || [],
+        typology: values.houseTraitType?.label || values.houseTraitType?.value || values.houseTraitType || '',
+        rooms: values.rooms ? Number(values.rooms) : undefined,
+        bathrooms: values.bathrooms ? Number(values.bathrooms) : undefined,
+        builtArea: values.builtArea ? Number(values.builtArea) : undefined,
+        usableArea: values.usableArea ? Number(values.usableArea) : undefined,
+        grossArea: values.grossArea ? Number(values.grossArea) : undefined,
+        constructionYear: values.constructionYear ? Number(values.constructionYear) : undefined,
+        houseNumber: values.houseNumber || '',
+        street: values.street || '',
+        city: values.city || '',
+        neighborhood: values.neighborhood || '',
+        latitude: values.latitude ? Number(values.latitude) : undefined,
+        longitude: values.longitude ? Number(values.longitude) : undefined,
+        location: values.location?.lat && values.location?.lng
+          ? { lat: Number(values.location.lat), lng: Number(values.location.lng) }
+          : undefined,
+        photos,
+        videoUrl: values.videoUrl || '',
+        licenseId: values.licenseId || '',
+      };
+    }, []);
+
+    const submitHouse = useCallback(async () => {
+      setSubmitError('');
+      setIsSubmitting(true);
+      log.info('Step 5 submit started', {
+        step: formValues.step,
+        selectedPlan: formValues.plan?.id || null,
+        localPhotos: (formValues.photos || []).filter((photo) => photo instanceof File).length,
+        existingPhotos: (formValues.photos || []).filter((photo) => typeof photo === 'string').length,
+      });
+      try {
+        const uploadedPhotoUrls = await uploadPhotos(formValues.photos || []);
+        const housePayload = buildHousePayload(formValues, uploadedPhotoUrls);
+        log.debug('Publishing house payload summary', {
+          title: housePayload.title,
+          businessType: housePayload.businessType,
+          photos: housePayload.photos?.length || 0,
+          hasVideoUrl: !!housePayload.videoUrl,
+          hasLicenseId: !!housePayload.licenseId,
+        });
+
+        await publishHouse({
+          variables: { housePayload },
+        });
+
+        dispatch(updateCreateImovel({ photos: housePayload.photos }));
+        log.success('Step 5 submit completed', {
+          photos: housePayload.photos?.length || 0,
+        });
+        window.alert('Imóvel publicado com sucesso.');
+      } catch (error) {
+        log.error('Step 5 submit failed', {
+          error: error?.message || String(error),
+        });
+        setSubmitError(error.message || 'Falha ao publicar imóvel');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }, [buildHousePayload, dispatch, formValues, publishHouse, uploadPhotos]);
 
     // Validation schemas for each step
     const stepValidationSchemas = {
@@ -381,6 +536,18 @@ export default function CreateImovelForm(props){
         fullAddress: {
           rules: [ValidationRules.required],
           label: 'Localização do Imóvel',
+        },
+        street: {
+          rules: [ValidationRules.required],
+          label: 'Rua',
+        },
+        houseNumber: {
+          rules: [ValidationRules.required, ValidationRules.number],
+          label: 'Número da Casa',
+        },
+        zipCode: {
+          rules: [ValidationRules.required, ValidationRules.zipCode],
+          label: 'Código Postal',
         },
       },
       1: { // Step 2 - About you (reloads step 1 + adds name/phone)
@@ -430,6 +597,10 @@ export default function CreateImovelForm(props){
 
     const handleNext = () => {
         if (validateCurrentStep()) {
+          if (formValues.step === steps.length - 1) {
+            submitHouse();
+            return;
+          }
           if (formValues.step < steps.length - 1) {
             dispatch(setCreateImovelStep(formValues.step + 1));
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -470,14 +641,16 @@ export default function CreateImovelForm(props){
             <CenterSide className="center-side">
                 {
                     <div key={`step-${activeStep}-inner-component`}>
-                        {componentsToRender({values: formValues, handleChange, errors})[activeStep]}
+                        {componentsToRender({values: formValues, handleChange, errors, submitError, isSubmitting})[activeStep]}
                     </div>
                 }
                 <Box className="action-buttons">
                     <BackwardBtn className={"backward-btn " + (activeStep==0?' cursor-disabled':'')} disabled={activeStep === 0}  onClick={handleBack}>
                         Voltar
                     </BackwardBtn>
-                    <ForwardBtn className="forward-btn" onClick={handleNext}>Continuar</ForwardBtn>
+                    <ForwardBtn className="forward-btn" onClick={handleNext} disabled={isSubmitting}>
+                      {activeStep === steps.length - 1 ? (isSubmitting ? 'Publicando...' : 'Publicar Imóvel') : 'Continuar'}
+                    </ForwardBtn>
                 </Box>
             </CenterSide>
             <RightSide>
@@ -650,31 +823,45 @@ const StepOne = ({values, handleChange, errors = {},...props})=>{
           }}
         />
         <CustomInput 
-            width={80}
-            property="Rua" 
-            name="street" 
-            placeholder="Colocar o nome ou número da rua"
-            value={values.street || ''}
-            onChange={(e)=>handleChange('street')(e.target.value)}
-            />
+          width={80}
+          property="Rua" 
+          name="street" 
+          placeholder="Colocar o nome ou número da rua"
+          value={values.street || ''}
+          onChange={(e)=>handleChange('street')(e.target.value)}
+          error={!!errors.street}
+          helperText={errors.street}
+        />
         <Split>
-            
-            <CustomInput 
-                width={50}
-                property="Numero da casa" 
-                name="house_number" 
-                placeholder="2..."
-                value={values.houseNumber || ''}
-                onChange={(e)=>handleChange('houseNumber')(e.target.value)}
-                />
+          <CustomInput 
+            width={50}
+            property="Numero da casa" 
+            name="house_number" 
+            placeholder="2..."
+            value={values.houseNumber || ''}
+            onChange={(e)=> {
+              const val = e.target.value.replace(/\D/g, '');
+              handleChange('houseNumber')(val);
+            }}
+            error={!!errors.houseNumber}
+            helperText={errors.houseNumber}
+          />
             <CustomInput 
                 width={50}
                 property="Códico postal" 
                 name="zip_code" 
-                placeholder="Opcional"
-                value={values.zipCode || ''}
-                onChange={(e)=>handleChange('zipCode')(e.target.value)}
-                />
+                placeholder="0000 ou 0000-00"
+                value={values.zipCode || '0000-00'}
+                onChange={(e)=> {
+                  let val = e.target.value.replace(/\D/g, '');
+                  if(val.length > 4) val = val.slice(0,4) + '-' + val.slice(4,6);
+                  // If empty, set default
+                  if (!val) val = '0000-00';
+                  handleChange('zipCode')(val);
+                }}
+                error={!!errors.zipCode}
+                helperText={errors.zipCode}
+            />
         </Split>
         
         
@@ -750,7 +937,7 @@ const StepTwo = ({values, handleChange, errors = {}})=>{
 const StepThree = ({values, handleChange, errors = {}})=>{
   const houseStatus = values.houseStatus || [];
   const otherTraits = values.otherTraits || [];
-
+  
   const toggleStatus = (status) => {
     const next = houseStatus.includes(status)
       ? houseStatus.filter(s => s !== status)
@@ -944,14 +1131,19 @@ const StepThree = ({values, handleChange, errors = {}})=>{
 
 
 function StepFour({ values, handleChange, errors = {} }) {
-  const [photos, setPhotos] = useState([]);
+  const [photos, setPhotos] = useState(values.photos || []);
+
+  useEffect(() => {
+    setPhotos(values.photos || []);
+  }, [values.photos]);
 
   const onDrop = useCallback((acceptedFiles) => {
     setPhotos(prev => {
-      const combined = [...prev, ...acceptedFiles];
+      const combined = [...prev, ...acceptedFiles].slice(0, MAX_FILES);
+      handleChange('photos')(combined);
       return combined.slice(0, MAX_FILES);
     });
-  }, []);
+  }, [handleChange]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -963,9 +1155,14 @@ function StepFour({ values, handleChange, errors = {} }) {
   });
 
   const removePhoto = (index) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-  };
+  setPhotos(prev => {
+    const nextPhotos = prev.filter((_, i) => i !== index);
+    handleChange('photos')(nextPhotos);
+    return nextPhotos;
+  });
+};
 
+  console.log('\n\n\n\n\n\n\n\n\n\n\n=================photos in step 4', photos)
   return (
     <StepsContainer>
       <Typography variant="h5" sx={{ fontFamily: 'gotham-bold', mb: 2 }}>
@@ -997,8 +1194,11 @@ function StepFour({ values, handleChange, errors = {} }) {
         <PreviewGrid>
           {photos.map((file, index) => (
             <PreviewItem key={index}>
-              <img src={URL.createObjectURL(file)} alt="preview" />
-              <button onClick={() => removePhoto(index)}>×</button>
+              <img
+                src={typeof file === 'string' ? file : URL.createObjectURL(file)}
+                alt="preview"
+              />
+              <button type="button" onClick={() => removePhoto(index)}>×</button>
             </PreviewItem>
           ))}
         </PreviewGrid>
@@ -1007,7 +1207,7 @@ function StepFour({ values, handleChange, errors = {} }) {
       <Button
         sx={{ mt: 2, borderRadius: '1em' }}
         variant="contained"
-        onClick={() => document.querySelector('input[type=file]').click()}
+        onClick={() => document.querySelector('input[type=file]')?.click()}
       >
         Adicionar foto
       </Button>
@@ -1058,7 +1258,7 @@ function StepFour({ values, handleChange, errors = {} }) {
 
 
 
-function StepFive({ values, handleChange, errors = {} }) {
+function StepFive({ values, handleChange, errors = {}, submitError, isSubmitting }) {
   const [billing, setBilling] = useState('anual');
 
   const plans = PLANS[billing];
@@ -1084,12 +1284,14 @@ function StepFive({ values, handleChange, errors = {} }) {
       {/* Billing toggle */}
       <BillingToggle>
         <button
+          type="button"
           className={billing === 'anual' ? 'active' : ''}
           onClick={() => setBilling('anual')}
         >
           Anual (30% desconto)
         </button>
         <button
+          type="button"
           className={billing === 'mensal' ? 'active' : ''}
           onClick={() => setBilling('mensal')}
         >
@@ -1153,6 +1355,16 @@ function StepFive({ values, handleChange, errors = {} }) {
         <br />
         Favor confirmar para tornar seu imóvel público.
       </Typography>
+      {submitError && (
+        <Typography sx={{ mt: 2, fontSize: '0.9rem', color: '#d32f2f' }}>
+          {submitError}
+        </Typography>
+      )}
+      {isSubmitting && (
+        <Typography sx={{ mt: 1, fontSize: '0.85rem', color: '#666' }}>
+          Enviando fotos e publicando anúncio...
+        </Typography>
+      )}
     </StepsContainer>
   );
 }

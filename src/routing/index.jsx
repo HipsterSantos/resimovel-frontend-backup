@@ -7,7 +7,7 @@ import HouseDetails from '../pages/HouseDetails';
 import Dashboard from '../containers/dashboard';
 import NotFound from '../pages/NotFound';
 import PrivateRoute from './private.route';
-
+import AboutUs from '../pages/AboutUs/index';
 
 // Lazy load MenuComponent and FooterSection
 const MenuComponent = lazy(() => import('../components/menu'));
@@ -30,6 +30,10 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <Layout><LandingPage /></Layout>,
+  },
+  {
+    path: '/sobre-nos',
+    element: <Layout><AboutUs/></Layout>,
   },
   {
     path: '/:type_operation/imovel/:location',
